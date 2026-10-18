@@ -8,6 +8,7 @@ export interface NodeOptions {
     scaleY?: number;
     opacity?: number;
     visible?: boolean;
+    layer?: number;
 }
 
 export abstract class Node {
@@ -19,6 +20,11 @@ export abstract class Node {
     scaleY: number;
     opacity: number;
     visible: boolean;
+    /**
+     * The canvas this node is in, Kept up to date by Canvas.
+     */
+    _canvas: Canvas | null = null;
+    private _layer: number;
 
     constructor({
         x = 0,
@@ -28,6 +34,7 @@ export abstract class Node {
         scaleY = 1,
         opacity = 1,
         visible = true,
+        layer = 0,
     }: NodeOptions = {}) {
         this.x = x;
         this.y = y;
@@ -36,6 +43,24 @@ export abstract class Node {
         this.scaleY = scaleY;
         this.opacity = opacity;
         this.visible = visible;
+        this._layer = layer;
+    }
+
+    /**
+     * Drawing order. Nodes on higher layers are drawn on top of nodes on lower
+     * ones, nodes on the same layer are drawn in the order they were added.
+     */
+    get layer(): number {
+        return this._layer;
+    }
+
+    set layer(layer: number) {
+        if (layer !== this._layer) {
+            this._layer = layer;
+            if (this._canvas) {
+                this._canvas._needsSort = true;
+            }
+        }
     }
 
     render(context: CanvasRenderingContext2D): void {

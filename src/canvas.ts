@@ -24,6 +24,10 @@ export class Canvas {
     grid: boolean | GridOptions;
 
     private readonly _nodes = new Set<Node>();
+    // The nodes in draw order.
+    private _sorted: Node[] = [];
+    // Set when nodes are added or removed, and by Node when a node's layer changes
+    _needsSort = false;
     private readonly _abortController = new AbortController();
     private _resizeObserver: ResizeObserver | null = null;
     private _width = 0;
@@ -71,15 +75,24 @@ export class Canvas {
 
     add(...nodes: Node[]): this {
         for (const node of nodes) {
-            this._nodes.add(node);
+            if (node._canvas !== this) {
+                node._canvas?.remove(node);
+                node._canvas = this;
+                this._nodes.add(node);
+            }
         }
+        this._needsSort = true;
         return this;
     }
 
     remove(...nodes: Node[]): this {
         for (const node of nodes) {
-            this._nodes.delete(node);
+            if (node._canvas === this) {
+                node._canvas = null;
+                this._nodes.delete(node);
+            }
         }
+        this._needsSort = true;
         return this;
     }
 
@@ -97,7 +110,7 @@ export class Canvas {
             this._drawGrid(this.grid === true ? {} : this.grid);
         }
 
-        for (const node of this._nodes) {
+        for (const node of this._sortedNodes()) {
             node.render(this.context);
         }
     }
@@ -110,6 +123,14 @@ export class Canvas {
     destroy(): void {
         this._stopFitting();
         this._abortController.abort();
+
+        // Nodes link back to their canvas, so unlink them, or a node that's kept
+        // after this canvas is gone would keep it alive.
+        for (const node of this._nodes) {
+            node._canvas = null;
+        }
+        this._nodes.clear();
+        this._needsSort = true;
     }
 
     private _listen<E extends Event>(
@@ -122,6 +143,15 @@ export class Canvas {
             ...options,
             signal: this._abortController.signal,
         });
+    }
+
+    private _sortedNodes(): Node[] {
+        // Sorting only after nodes are added or removed, or a layer changes
+        if (this._needsSort) {
+            this._sorted = [...this._nodes].sort((a, b) => a.layer - b.layer);
+            this._needsSort = false;
+        }
+        return this._sorted;
     }
 
     private _drawGrid({
