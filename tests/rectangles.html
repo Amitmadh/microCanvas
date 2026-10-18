@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+    Visual test for Canvas and Rectangle. Run `npm run build` first, then open
+    this page through a local server (e.g. `npx serve .` and go to
+    /tests/rectangles.html). Browsers block module imports on file:// pages.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rectangles test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <script type="module">
+        import { Canvas, Rectangle, Text } from "../dist/index.js";
+
+        const canvas = new Canvas(document.querySelector("canvas"), { grid: true });
+
+        const gradient = canvas.context.createLinearGradient(0, 0, 120, 0);
+        gradient.addColorStop(0, "deepskyblue");
+        gradient.addColorStop(1, "mediumvioletred");
+
+        const cases = [
+            ["Fill", new Rectangle({ x: 40, y: 60, width: 120, height: 80, fill: "tomato" })],
+            ["Fill + stroke", new Rectangle({
+                x: 240, y: 60, width: 120, height: 80, fill: "gold", stroke: "black", strokeWidth: 4,
+            })],
+            ["Stroke only", new Rectangle({
+                x: 440, y: 60, width: 120, height: 80, fill: null, stroke: "royalblue", strokeWidth: 2,
+            })],
+            ["Gradient fill", new Rectangle({ x: 640, y: 60, width: 120, height: 80, fill: gradient })],
+            ["Rotated 30°", new Rectangle({
+                x: 60, y: 260, width: 120, height: 80, fill: "mediumseagreen", rotation: Math.PI / 6,
+            })],
+            ["Scaled 1.5×", new Rectangle({
+                x: 240, y: 260, width: 80, height: 50, fill: "orange", stroke: "black", strokeWidth: 2,
+                scaleX: 1.5, scaleY: 1.5,
+            })],
+            ["Opacity 0.5", new Rectangle({ x: 440, y: 260, width: 120, height: 80, fill: "purple", opacity: 0.5 })],
+            ["Hidden (should be empty)", new Rectangle({
+                x: 640, y: 260, width: 120, height: 80, fill: "red", visible: false,
+            })],
+        ];
+
+        for (const [text, rectangle] of cases) {
+            canvas.add(new Text({ text, x: rectangle.x, y: rectangle.y - 12 }), rectangle);
+        }
+
+        const removed = new Rectangle({ x: 40, y: 460, width: 120, height: 80, fill: "red" });
+        canvas.add(new Text({ text: "Removed (should be empty)", x: 40, y: 448 }), removed);
+        canvas.remove(removed);
+
+        canvas.render();
+    </script>
+</body>
+</html>

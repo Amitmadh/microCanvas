@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+    Visual test for Canvas and Circle. Run `npm run build` first, then open
+    this page through a local server (e.g. `npx serve .` and go to
+    /tests/circles.html). Browsers block module imports on file:// pages.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Circles test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <script type="module">
+        import { Canvas, Circle, Text } from "../dist/index.js";
+
+        const canvas = new Canvas(document.querySelector("canvas"), {
+            background: "#f5f7fa",
+            grid: { style: "dots", color: "#c5cad3" },
+        });
+
+        // Gradients are in the circle's own space, so (0, 0) is its centre.
+        const gradient = canvas.context.createRadialGradient(-15, -15, 5, 0, 0, 50);
+        gradient.addColorStop(0, "white");
+        gradient.addColorStop(1, "steelblue");
+
+        const cases = [
+            ["Fill", new Circle({ x: 100, y: 110, radius: 50, fill: "tomato" })],
+            ["Fill + stroke", new Circle({
+                x: 300, y: 110, radius: 50, fill: "gold", stroke: "black", strokeWidth: 4,
+            })],
+            ["Stroke only", new Circle({
+                x: 500, y: 110, radius: 50, fill: null, stroke: "royalblue", strokeWidth: 2,
+            })],
+            ["Radial gradient", new Circle({ x: 700, y: 110, radius: 50, fill: gradient })],
+            ["Scaled 1.6× wide", new Circle({
+                x: 100, y: 310, radius: 50, fill: "orange", stroke: "black", strokeWidth: 2, scaleX: 1.6,
+            })],
+            ["Rotated 45° ellipse", new Circle({
+                x: 300, y: 310, radius: 40, fill: "mediumseagreen", scaleX: 1.5, rotation: Math.PI / 4,
+            })],
+            ["Opacity 0.5", new Circle({ x: 500, y: 310, radius: 50, fill: "purple", opacity: 0.5 })],
+            ["Hidden (should be empty)", new Circle({
+                x: 700, y: 310, radius: 50, fill: "red", visible: false,
+            })],
+            ["Negative radius (should be empty)", new Circle({ x: 300, y: 510, radius: -50, fill: "red" })],
+        ];
+
+        // A solid circle behind the translucent one, so the opacity shows.
+        canvas.add(new Circle({ x: 460, y: 310, radius: 30, fill: "black" }));
+
+        // Circles are positioned by their centre, so labels go above the top-left.
+        for (const [text, circle] of cases) {
+            canvas.add(new Text({ text, x: circle.x - 60, y: circle.y - 62 }), circle);
+        }
+
+        const removed = new Circle({ x: 100, y: 510, radius: 50, fill: "red" });
+        canvas.add(new Text({ text: "Removed (should be empty)", x: 40, y: 448 }), removed);
+        canvas.remove(removed);
+
+        // The canvas also redraws its nodes by itself whenever it resizes.
+        canvas.render();
+    </script>
+</body>
+</html>

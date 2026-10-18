@@ -1,0 +1,75 @@
+<!doctype html>
+<!--
+    Visual test for Canvas and Image. Run `npm run build` first, then open
+    this page through a local server (e.g. `npx serve .` and go to
+    /tests/images.html). Browsers block module imports on file:// pages.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Images test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <script type="module">
+        import { Canvas, Image, Text } from "../dist/index.js";
+
+        const canvas = new Canvas(document.querySelector("canvas"), { grid: true });
+
+        // 1920×1282, so it's scaled down or given a size in every case.
+        const url = "assets/clickerhappy-beach-front-5819728_1920.jpg";
+        const picture = await Image.load(url, { x: 40, y: 60, scaleX: 1 / 16, scaleY: 1 / 16 });
+
+        // Any canvas can be a source too.
+        const checkerboard = document.createElement("canvas");
+        checkerboard.width = checkerboard.height = 80;
+        const board = checkerboard.getContext("2d");
+        for (let i = 0; i < 16; i++) {
+            board.fillStyle = (i + Math.floor(i / 4)) % 2 ? "#333" : "#ddd";
+            board.fillRect((i % 4) * 20, Math.floor(i / 4) * 20, 20, 20);
+        }
+
+        const broken = document.createElement("img");
+        broken.src = "does-not-exist.png";
+
+        const cases = [
+            [`Natural ${picture.width}×${picture.height}, scale 1/16`, picture],
+            ["width: 160, keeps ratio", await Image.load(url, { x: 240, y: 60, width: 160 })],
+            ["Stretched 120×120", new Image({ image: picture.image, x: 440, y: 60, width: 120, height: 120 })],
+            ["Canvas source", new Image({ image: checkerboard, x: 640, y: 60 })],
+            ["Rotated 15°, opacity 0.5", new Image({
+                image: picture.image, x: 50, y: 260, width: 120, rotation: Math.PI / 12, opacity: 0.5,
+            })],
+            ["Hidden (should be empty)", new Image({
+                image: picture.image, x: 240, y: 260, width: 120, visible: false,
+            })],
+            ["Broken image (should be empty)", new Image({ image: broken, x: 440, y: 260, width: 120, height: 80 })],
+        ];
+
+        for (const [text, image] of cases) {
+            canvas.add(new Text({ text, x: image.x, y: image.y - 12 }), image);
+        }
+
+        const loadError = new Text({ text: "", x: 40, y: 470, fill: "firebrick" });
+        canvas.add(new Text({ text: "Image.load() with a bad URL:", x: 40, y: 448 }), loadError);
+        try {
+            await Image.load("does-not-exist.png");
+            loadError.text = "No error (unexpected)";
+        } catch (error) {
+            loadError.text = error.message;
+        }
+
+        // The canvas also redraws its nodes by itself whenever it resizes.
+        canvas.render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "name": "microcanvas",
+  "version": "1.0.0",
+  "description": "A lightweight TypeScript library for creating and interacting with canvas-based graphics.",
+  "keywords": [
+    "canvas",
+    "2d",
+    "graphics",
+    "TypeScript",
+    "drawing",
+    "rendering",
+    "interactive",
+    "scene-graph",
+    "whiteboard"
+  ],
+  "homepage": "https://github.com/Amitmadh/microCanvas#readme",
+  "bugs": {
+    "url": "https://github.com/Amitmadh/microCanvas/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Amitmadh/microCanvas.git"
+  },
+  "license": "MIT",
+  "author": "Amit Madhala",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "test"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
