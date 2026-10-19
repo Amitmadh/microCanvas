@@ -9,7 +9,7 @@ export interface TextOptions extends NodeOptions {
     fontWeight?: string | number;
     fontStyle?: "normal" | "italic";
     fill?: Paint;
-    align?: CanvasTextAlign;
+    align?: "left" | "center" | "right";
     baseline?: CanvasTextBaseline;
 }
 
@@ -25,7 +25,7 @@ export class Text extends Node {
     fontWeight: string | number;
     fontStyle: "normal" | "italic";
     fill: Paint;
-    align: CanvasTextAlign;
+    align: "left" | "center" | "right";
     baseline: CanvasTextBaseline;
 
     constructor({
@@ -35,7 +35,7 @@ export class Text extends Node {
         fontWeight = "normal",
         fontStyle = "normal",
         fill = "black",
-        align = "start",
+        align = "left",
         baseline = "alphabetic",
         ...options
     }: TextOptions) {
@@ -69,7 +69,7 @@ export class Text extends Node {
         let x = 0;
         if (this.align === "center") {
             x = -width / 2;
-        } else if (this.align === "right" || this.align === "end") {
+        } else if (this.align === "right") {
             x = -width;
         }
 
