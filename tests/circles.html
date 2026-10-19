@@ -25,7 +25,6 @@
 
         const canvas = new Canvas(document.querySelector("canvas"), {
             background: "#f5f7fa",
-            grid: { style: "dots", color: "#c5cad3" },
         });
 
         // Gradients are in the circle's own space, so (0, 0) is its centre.
@@ -67,7 +66,6 @@
         canvas.add(new Text({ text: "Removed (should be empty)", x: 40, y: 448 }), removed);
         canvas.remove(removed);
 
-        // The canvas also redraws its nodes by itself whenever it resizes.
         canvas.render();
     </script>
 </body>

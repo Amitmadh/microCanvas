@@ -23,7 +23,7 @@
     <script type="module">
         import { Canvas, Rectangle, Text } from "../dist/index.js";
 
-        const canvas = new Canvas(document.querySelector("canvas"), { grid: true });
+        const canvas = new Canvas(document.querySelector("canvas"));
 
         const gradient = canvas.context.createLinearGradient(0, 0, 120, 0);
         gradient.addColorStop(0, "deepskyblue");

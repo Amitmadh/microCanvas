@@ -1,5 +1,5 @@
 import type { Node } from "./node.js";
-import type { Paint } from "./types.js";
+import type { Paint, Point } from "./types.js";
 
 export interface GridOptions {
     style?: "lines" | "dots";
@@ -113,6 +113,39 @@ export class Canvas {
         for (const node of this._sortedNodes()) {
             node.render(this.context);
         }
+    }
+
+    /**
+     * Converts a mouse, pointer or touch event's position to canvas
+     * coordinates, the space nodes are positioned in.
+     */
+    pointFromEvent(event: { clientX: number; clientY: number }): Point {
+        const rect = this.canvas.getBoundingClientRect();
+        // clientLeft and clientTop are the widths of the canvas's border.
+        return {
+            x: event.clientX - rect.left - this.canvas.clientLeft,
+            y: event.clientY - rect.top - this.canvas.clientTop,
+        };
+    }
+
+    /**
+     * Finds the topmost node at a point in canvas coordinates, or null if
+     * there is none. Nodes that render() skips are skipped here too, and so
+     * are nodes the filter rejects, which lets it look through overlays such
+     * as a selection outline.
+     */
+    nodeAt(point: Point, filter?: (node: Node) => boolean): Node | null {
+        const nodes = this._sortedNodes();
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            const node = nodes[i];
+            if (!node.visible || node.opacity <= 0 || (filter && !filter(node))) {
+                continue;
+            }
+            if (node.containsPoint(point)) {
+                return node;
+            }
+        }
+        return null;
     }
 
     resize(width: number, height: number): void {

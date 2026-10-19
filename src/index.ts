@@ -8,7 +8,7 @@ export { Rectangle } from "./rectangle.js";
 export type { RectangleOptions } from "./rectangle.js";
 export { Circle } from "./circle.js";
 export type { CircleOptions } from "./circle.js";
-export type { Paint } from "./types.js";
+export type { Paint, Point, Rect } from "./types.js";
 export { Text } from "./text.js";
 export type { TextOptions } from "./text.js";
 export { Image } from "./image.js";

@@ -1,28 +1,28 @@
 import { Node, type NodeOptions } from "./node.js";
+import type { Point, Rect } from "./types.js";
 
 export interface ImageOptions extends NodeOptions {
-    image: CanvasImageSource;
-    /** Defaults to the image's own width, or keeps its aspect ratio if only height is set. */
+    image: HTMLImageElement;
+    /** Defaults to the image's own width, which is 0 until it has loaded. */
     width?: number;
-    /** Defaults to the image's own height, or keeps its aspect ratio if only width is set. */
+    /** Defaults to the image's own height, which is 0 until it has loaded. */
     height?: number;
 }
 
 /**
- * Draws an image, canvas, video or bitmap with its top-left corner at the
- * node's position. Nothing shows until the source has loaded; use
- * Image.load() to load one from a URL.
+ * Draws a picture with its top-left corner at the node's position. Nothing
+ * shows until it has loaded; use Image.load() to load one from a URL.
  */
 export class Image extends Node {
-    image: CanvasImageSource;
-    private _width: number | undefined;
-    private _height: number | undefined;
+    image: HTMLImageElement;
+    width: number;
+    height: number;
 
-    constructor({ image, width, height, ...options }: ImageOptions) {
+    constructor({ image, width = image.naturalWidth, height = image.naturalHeight, ...options }: ImageOptions) {
         super(options);
         this.image = image;
-        this._width = width;
-        this._height = height;
+        this.width = width;
+        this.height = height;
     }
 
     /** Loads an image from a URL and resolves once it's ready to draw. */
@@ -37,67 +37,29 @@ export class Image extends Node {
         return new Image({ ...options, image: element });
     }
 
-    get width(): number {
-        return this._size().width;
-    }
-
-    /** Set to undefined to go back to the image's own width. */
-    set width(value: number | undefined) {
-        this._width = value;
-    }
-
-    get height(): number {
-        return this._size().height;
-    }
-
-    /** Set to undefined to go back to the image's own height. */
-    set height(value: number | undefined) {
-        this._height = value;
+    getLocalBounds(): Rect {
+        return { x: 0, y: 0, width: this.width, height: this.height };
     }
 
     protected draw(context: CanvasRenderingContext2D): void {
-        // Skip sources that haven't loaded or failed to load; drawImage()
+        // Skip images that haven't loaded or failed to load; drawImage()
         // throws on a broken image, which would stop the whole render.
-        const natural = naturalSize(this.image);
-        if (!natural.width || !natural.height) {
+        if (!this._isLoaded()) {
             return;
         }
 
-        const { width, height } = this._size();
-        context.drawImage(this.image, 0, 0, width, height);
+        context.drawImage(this.image, 0, 0, this.width, this.height);
     }
 
-    private _size(): { width: number; height: number } {
-        if (this._width !== undefined && this._height !== undefined) {
-            return { width: this._width, height: this._height };
-        }
+    /**
+     * Hits anywhere in the image's box, transparent pixels included, but only
+     * once there's something drawn.
+     */
+    protected containsLocalPoint(point: Point): boolean {
+        return this._isLoaded() && super.containsLocalPoint(point);
+    }
 
-        const natural = naturalSize(this.image);
-        if (!natural.width || !natural.height) {
-            return { width: this._width ?? 0, height: this._height ?? 0 };
-        }
-        if (this._width !== undefined) {
-            return { width: this._width, height: (this._width * natural.height) / natural.width };
-        }
-        if (this._height !== undefined) {
-            return { width: (this._height * natural.width) / natural.height, height: this._height };
-        }
-        return natural;
+    private _isLoaded(): boolean {
+        return this.image.naturalWidth > 0;
     }
-}
-
-function naturalSize(source: CanvasImageSource): { width: number; height: number } {
-    if ("naturalWidth" in source) {
-        return { width: source.naturalWidth, height: source.naturalHeight };
-    }
-    if ("videoWidth" in source) {
-        return { width: source.videoWidth, height: source.videoHeight };
-    }
-    if ("displayWidth" in source) {
-        return { width: source.displayWidth, height: source.displayHeight };
-    }
-    if (source instanceof SVGImageElement) {
-        return { width: source.width.baseVal.value, height: source.height.baseVal.value };
-    }
-    return { width: source.width, height: source.height };
 }

@@ -23,7 +23,7 @@
     <script type="module">
         import { Canvas, Rectangle, Text } from "../dist/index.js";
 
-        const canvas = new Canvas(document.querySelector("canvas"), { grid: true });
+        const canvas = new Canvas(document.querySelector("canvas"));
 
         // Three overlapping squares, offset so each one shows which is on top.
         function stack(x, y, layers) {
@@ -58,7 +58,6 @@
         canvas.render();
         changedLater[1].layer = 1;
 
-        // The canvas also redraws its nodes by itself whenever it resizes.
         canvas.render();
     </script>
 </body>

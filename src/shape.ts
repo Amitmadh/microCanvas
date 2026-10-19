@@ -1,5 +1,6 @@
 import { Node, type NodeOptions } from "./node.js";
-import type { Paint } from "./types.js";
+import { sharedContextInstance } from "./scratch.js";
+import type { Paint, Point } from "./types.js";
 
 export interface ShapeOptions extends NodeOptions {
     fill?: Paint | null;
@@ -39,6 +40,27 @@ export abstract class Shape extends Node {
             context.lineWidth = this.strokeWidth;
             context.stroke();
         }
+    }
+
+    /**
+     * Only the painted parts of a shape are hit: inside it if it has a fill,
+     * and on its outline if it has a stroke.
+     */
+    protected containsLocalPoint({ x, y }: Point): boolean {
+        const context = sharedContextInstance();
+        context.beginPath();
+        this.tracePath(context);
+
+        if (this.fill && context.isPointInPath(x, y)) {
+            return true;
+        }
+
+        if (this.stroke && this.strokeWidth > 0) {
+            context.lineWidth = this.strokeWidth;
+            return context.isPointInStroke(x, y);
+        }
+
+        return false;
     }
 
     /**
