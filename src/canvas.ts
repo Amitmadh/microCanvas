@@ -202,6 +202,7 @@ export class Canvas {
         // An inline canvas leaves a descender gap below it, which would grow an
         // auto-height parent on every resize.
         this.canvas.style.display = "block";
+        this.canvas.style.position = "absolute";
         this._resizeObserver = new ResizeObserver(([entry]) => {
             this._setSize(entry.contentRect.width, entry.contentRect.height);
         });
