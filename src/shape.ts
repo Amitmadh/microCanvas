@@ -8,6 +8,10 @@ export interface ShapeOptions extends NodeOptions {
     strokeWidth?: number;
 }
 
+/**
+ * @class Shape
+ * @description A node drawn from a path, with an optional fill and stroke.
+ */
 export abstract class Shape extends Node {
     fill: Paint | null;
     stroke: Paint | null;

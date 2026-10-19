@@ -10,8 +10,9 @@ export interface ImageOptions extends NodeOptions {
 }
 
 /**
- * Draws a picture with its top-left corner at the node's position. Nothing
- * shows until it has loaded; use Image.load() to load one from a URL.
+ * @class Image
+ * @description A picture with its top-left corner at the node's position.
+ * Nothing shows until it has loaded; use Image.load() to load one from a URL.
  */
 export class Image extends Node {
     image: HTMLImageElement;
@@ -41,12 +42,9 @@ export class Image extends Node {
     }
 
     protected draw(context: CanvasRenderingContext2D): void {
-        // Skip images that haven't loaded or failed to load; drawImage()
-        // throws on a broken image, which would stop the whole render.
         if (!this._isLoaded()) {
             return;
         }
-
         context.drawImage(this.image, 0, 0, this.width, this.height);
     }
 

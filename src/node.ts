@@ -12,6 +12,11 @@ export interface NodeOptions {
     layer?: number;
 }
 
+/**
+ * @class Node
+ * @description The base of everything drawn on a canvas. Holds the position,
+ * rotation, scale, opacity, visibility and layer.
+ */
 export abstract class Node {
     x: number;
     y: number;
@@ -21,7 +26,7 @@ export abstract class Node {
     scaleY: number;
     opacity: number;
     visible: boolean;
-    /** The canvas this node is in, Kept up to date by Canvas. */
+    /** The canvas this node is in, kept up to date by Canvas. */
     _canvas: Canvas | null = null;
     private _layer: number;
 
@@ -106,8 +111,7 @@ export abstract class Node {
     /**
      * @method containsPoint
      * @description Whether a point in canvas coordinates is on the node. Only
-     * the node's shape counts, so a hidden node still contains points;
-     * Canvas.nodeAt() is what skips nodes that aren't drawn.
+     * the node's shape counts, so a hidden node still contains points.
      * @param point The point in canvas coordinates.
      * @returns True if the point is on the node.
      */

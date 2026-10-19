@@ -1,6 +1,7 @@
 /** Anything a 2D context accepts as a fill or stroke style. */
 export type Paint = string | CanvasGradient | CanvasPattern;
 
+/** A position in canvas coordinates or in a node's own coordinate space. */
 export interface Point {
     x: number;
     y: number;

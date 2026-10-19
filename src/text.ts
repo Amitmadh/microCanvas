@@ -13,6 +13,11 @@ export interface TextOptions extends NodeOptions {
     baseline?: CanvasTextBaseline;
 }
 
+/**
+ * @class Text
+ * @description A single line of text, aligned to the node's position by
+ * align and baseline.
+ */
 export class Text extends Node {
     text: string;
     fontSize: number;

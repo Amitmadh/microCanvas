@@ -7,6 +7,15 @@ export interface CanvasOptions {
     background?: Paint | null;
 }
 
+/**
+ * @class Canvas
+ * @description A canvas element that nodes are drawn on. Sizes are in CSS
+ * pixels, and drawing stays sharp at any pixel ratio. It gets a fixed size
+ * if both width and height are passed. Otherwise it fills its parent element
+ * and follows its size, or keeps its current size if it has no parent.
+ * @param canvas The canvas element to draw on.
+ * @param options Width and height in CSS pixels, and the background.
+ */
 export class Canvas {
     readonly canvas: HTMLCanvasElement;
     readonly context: CanvasRenderingContext2D;
@@ -23,14 +32,6 @@ export class Canvas {
     private _height = 0;
     private _pixelRatio = 0;
 
-    /**
-     * @constructor
-     * @description Gives the canvas a fixed size if both width and height are
-     * passed. Otherwise it fills its parent element and follows its size, or
-     * keeps its current size if it has no parent.
-     * @param canvas The canvas element to draw on.
-     * @param options Width and height in CSS pixels, and the background.
-     */
     constructor(canvas: HTMLCanvasElement, {
         width,
         height,

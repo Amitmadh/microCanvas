@@ -5,7 +5,10 @@ export interface CircleOptions extends ShapeOptions {
     radius: number;
 }
 
-/** A circle centred on the node's position. */
+/**
+ * @class Circle
+ * @description A circle centred on the node's position.
+ */
 export class Circle extends Shape {
     radius: number;
 
@@ -26,7 +29,6 @@ export class Circle extends Shape {
             return true;
         }
 
-        // The stroke is centred on the outline, half inside and half outside.
         if (this.stroke && this.strokeWidth > 0) {
             return Math.abs(distance - radius) <= this.strokeWidth / 2;
         }

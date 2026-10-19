@@ -6,6 +6,10 @@ export interface RectangleOptions extends ShapeOptions {
     height: number;
 }
 
+/**
+ * @class Rectangle
+ * @description A rectangle with its top-left corner at the node's position.
+ */
 export class Rectangle extends Shape {
     width: number;
     height: number;
@@ -27,25 +31,15 @@ export class Rectangle extends Shape {
         };
     }
 
-    /**
-     * @method containsLocalPoint
-     * @description The same answer as Shape's path test, worked out directly,
-     * which is several times faster.
-     * @param point The point in the rectangle's own coordinate space.
-     * @returns True if the point is on the fill or the stroke.
-     */
     protected containsLocalPoint({ x, y }: Point): boolean {
         const bounds = this.getLocalBounds();
-        if (this.fill && isInside(x, y, bounds, 0)) {
+        if (this.fill && this._isInside(x, y, bounds)) {
             return true;
         }
 
         if (this.stroke && this.strokeWidth > 0) {
-            // The stroke is centred on the outline and has square corners, so
-            // it covers the box grown by half its width, minus the box shrunk
-            // by half its width.
             const half = this.strokeWidth / 2;
-            return isInside(x, y, bounds, half) && !isInside(x, y, bounds, -half);
+            return this._isInside(x, y, bounds, half) && !this._isInside(x, y, bounds, -half);
         }
 
         return false;
@@ -54,18 +48,9 @@ export class Rectangle extends Shape {
     protected tracePath(context: CanvasRenderingContext2D): void {
         context.rect(0, 0, this.width, this.height);
     }
-}
 
-/**
- * @function isInside
- * @description Whether a point is in a box grown by margin on every side.
- * @param x The point's x.
- * @param y The point's y.
- * @param box The box to test against.
- * @param margin How far to grow the box; a negative margin shrinks it.
- * @returns True if the point is inside.
- */
-function isInside(x: number, y: number, box: Rect, margin: number): boolean {
-    return x >= box.x - margin && x <= box.x + box.width + margin
-        && y >= box.y - margin && y <= box.y + box.height + margin;
+    private _isInside(x: number, y: number, box: Rect, margin: number = 0): boolean {
+        return x >= box.x - margin && x <= box.x + box.width + margin
+            && y >= box.y - margin && y <= box.y + box.height + margin;
+    }
 }
