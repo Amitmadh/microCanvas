@@ -26,7 +26,10 @@ export abstract class McNode {
     scaleY: number;
     opacity: number;
     visible: boolean;
-    /** The canvas this node is in, kept up to date by Canvas. */
+    /** 
+     * @internal 
+     * The canvas this node is in, kept up to date by Canvas. 
+     */
     _canvas: Canvas | null = null;
     private _layer: number;
 

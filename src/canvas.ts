@@ -24,7 +24,10 @@ export class Canvas {
     private readonly _nodes = new Set<McNode>();
     // The nodes in draw order.
     private _sorted: McNode[] = [];
-    // Set when nodes are added or removed, and by McNode when a node's layer changes
+    /** 
+     * @internal 
+     * Set when nodes are added or removed, and by McNode when a node's layer changes.
+     */
     _needsSort = false;
     private readonly _abortController = new AbortController();
     private _resizeObserver: ResizeObserver | null = null;
@@ -224,7 +227,8 @@ export class Canvas {
 
     private _setSize(width: number, height: number): void {
         const pixelRatio = window.devicePixelRatio;
-        if (width === this._width && height === this._height && pixelRatio === this._pixelRatio) {
+        if (width === this._width && height === this._height &&
+             pixelRatio === this._pixelRatio) {
             return;
         }
 
