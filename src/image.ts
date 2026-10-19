@@ -25,7 +25,6 @@ export class Image extends Node {
         this.height = height;
     }
 
-    /** Loads an image from a URL and resolves once it's ready to draw. */
     static async load(url: string, options: Omit<ImageOptions, "image"> = {}): Promise<Image> {
         const element = document.createElement("img");
         element.src = url;
@@ -52,8 +51,11 @@ export class Image extends Node {
     }
 
     /**
-     * Hits anywhere in the image's box, transparent pixels included, but only
-     * once there's something drawn.
+     * @method containsLocalPoint
+     * @description Hits anywhere in the image's box, transparent pixels
+     * included, but only once there's something drawn.
+     * @param point The point in the image's own coordinate space.
+     * @returns True if the image has loaded and the point is in its box.
      */
     protected containsLocalPoint(point: Point): boolean {
         return this._isLoaded() && super.containsLocalPoint(point);

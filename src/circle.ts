@@ -19,10 +19,6 @@ export class Circle extends Shape {
         return { x: -radius, y: -radius, width: radius * 2, height: radius * 2 };
     }
 
-    /**
-     * The same answer as Shape's path test, worked out directly, which is
-     * several times faster.
-     */
     protected containsLocalPoint({ x, y }: Point): boolean {
         const radius = Math.max(this.radius, 0);
         const distance = Math.hypot(x, y);
@@ -39,7 +35,6 @@ export class Circle extends Shape {
     }
 
     protected tracePath(context: CanvasRenderingContext2D): void {
-        // arc() throws on a negative radius, which would stop the whole render.
         context.arc(0, 0, Math.max(this.radius, 0), 0, Math.PI * 2);
     }
 }

@@ -43,8 +43,11 @@ export abstract class Shape extends Node {
     }
 
     /**
-     * Only the painted parts of a shape are hit: inside it if it has a fill,
-     * and on its outline if it has a stroke.
+     * @method containsLocalPoint
+     * @description Only the painted parts of a shape are hit: inside it if it
+     * has a fill, and on its outline if it has a stroke.
+     * @param point The point in the shape's own coordinate space.
+     * @returns True if the point is on a painted part.
      */
     protected containsLocalPoint({ x, y }: Point): boolean {
         const context = sharedContextInstance();
@@ -64,8 +67,10 @@ export abstract class Shape extends Node {
     }
 
     /**
-     * Adds the shape's outline to the current path, in the node's own
-     * coordinate space. Filling and stroking are done by Shape.
+     * @method tracePath
+     * @description Adds the shape's outline to the current path, in the
+     * node's own coordinate space. Filling and stroking are done by Shape.
+     * @param context The context whose path to add to.
      */
     protected abstract tracePath(context: CanvasRenderingContext2D): void;
 }

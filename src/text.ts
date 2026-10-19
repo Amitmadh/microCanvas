@@ -4,15 +4,12 @@ import type { Paint, Rect } from "./types.js";
 
 export interface TextOptions extends NodeOptions {
     text: string;
-    /** Font size in CSS pixels. */
     fontSize?: number;
     fontFamily?: string;
     fontWeight?: string | number;
     fontStyle?: "normal" | "italic";
     fill?: Paint;
-    /** Horizontal alignment relative to the node's position. */
     align?: CanvasTextAlign;
-    /** Vertical alignment relative to the node's position. */
     baseline?: CanvasTextBaseline;
 }
 
@@ -49,8 +46,10 @@ export class Text extends Node {
     }
 
     /**
-     * The text's advance width by the font's full height, so the box doesn't
-     * change with which letters are in it.
+     * @method getLocalBounds
+     * @description The text's advance width by the font's full height, so the
+     * box doesn't change with which letters are in it.
+     * @returns The box in the text's own coordinate space.
      */
     getLocalBounds(): Rect {
         const context = sharedContextInstance();

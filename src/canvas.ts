@@ -1,27 +1,16 @@
 import type { Node } from "./node.js";
 import type { Paint, Point } from "./types.js";
 
-export interface GridOptions {
-    style?: "lines" | "dots";
-    /** Distance between lines or dots, in CSS pixels. */
-    size?: number;
-    color?: string;
-    /** Line width, or dot diameter for the "dots" style, in CSS pixels. */
-    lineWidth?: number;
-}
-
 export interface CanvasOptions {
     width?: number;
     height?: number;
     background?: Paint | null;
-    grid?: boolean | GridOptions;
 }
 
 export class Canvas {
     readonly canvas: HTMLCanvasElement;
     readonly context: CanvasRenderingContext2D;
     background: Paint | null;
-    grid: boolean | GridOptions;
 
     private readonly _nodes = new Set<Node>();
     // The nodes in draw order.
@@ -34,11 +23,18 @@ export class Canvas {
     private _height = 0;
     private _pixelRatio = 0;
 
+    /**
+     * @constructor
+     * @description Gives the canvas a fixed size if both width and height are
+     * passed. Otherwise it fills its parent element and follows its size, or
+     * keeps its current size if it has no parent.
+     * @param canvas The canvas element to draw on.
+     * @param options Width and height in CSS pixels, and the background.
+     */
     constructor(canvas: HTMLCanvasElement, {
         width,
         height,
         background = null,
-        grid = false,
     }: CanvasOptions = {}) {
         const context = canvas.getContext("2d");
         if (!context) {
@@ -48,7 +44,6 @@ export class Canvas {
         this.canvas = canvas;
         this.context = context;
         this.background = background;
-        this.grid = grid;
 
         if (width !== undefined && height !== undefined) {
             this._setSize(width, height);
@@ -73,6 +68,13 @@ export class Canvas {
         return this._pixelRatio;
     }
 
+    /**
+     * @method add
+     * @description Adds nodes to the canvas. A node can be in one canvas at a
+     * time, so this takes it out of any other.
+     * @param nodes The nodes to add.
+     * @returns The canvas, for chaining.
+     */
     add(...nodes: Node[]): this {
         for (const node of nodes) {
             if (node._canvas !== this) {
@@ -106,22 +108,20 @@ export class Canvas {
             this.context.restore();
         }
 
-        if (this.grid) {
-            this._drawGrid(this.grid === true ? {} : this.grid);
-        }
-
         for (const node of this._sortedNodes()) {
             node.render(this.context);
         }
     }
 
     /**
-     * Converts a mouse, pointer or touch event's position to canvas
-     * coordinates, the space nodes are positioned in.
+     * @method pointFromEvent
+     * @description Converts a mouse, pointer or touch event's position to
+     * canvas coordinates, the space nodes are positioned in.
+     * @param event The event, or anything with clientX and clientY.
+     * @returns The point in canvas coordinates.
      */
     pointFromEvent(event: { clientX: number; clientY: number }): Point {
         const rect = this.canvas.getBoundingClientRect();
-        // clientLeft and clientTop are the widths of the canvas's border.
         return {
             x: event.clientX - rect.left - this.canvas.clientLeft,
             y: event.clientY - rect.top - this.canvas.clientTop,
@@ -129,10 +129,14 @@ export class Canvas {
     }
 
     /**
-     * Finds the topmost node at a point in canvas coordinates, or null if
-     * there is none. Nodes that render() skips are skipped here too, and so
-     * are nodes the filter rejects, which lets it look through overlays such
-     * as a selection outline.
+     * @method nodeAt
+     * @description Finds the topmost node at a point in canvas coordinates.
+     * Nodes that render() skips are skipped here too, and so are nodes the
+     * filter rejects, which lets it look through overlays such as a selection
+     * outline.
+     * @param point The point in canvas coordinates.
+     * @param filter Returns false for nodes to look through.
+     * @returns The topmost node, or null if there is none.
      */
     nodeAt(point: Point, filter?: (node: Node) => boolean): Node | null {
         const nodes = this._sortedNodes();
@@ -148,6 +152,13 @@ export class Canvas {
         return null;
     }
 
+    /**
+     * @method resize
+     * @description Gives the canvas a fixed size, so it stops following its
+     * parent's size.
+     * @param width The new width in CSS pixels.
+     * @param height The new height in CSS pixels.
+     */
     resize(width: number, height: number): void {
         this._stopFitting();
         this._setSize(width, height);
@@ -179,56 +190,11 @@ export class Canvas {
     }
 
     private _sortedNodes(): Node[] {
-        // Sorting only after nodes are added or removed, or a layer changes
         if (this._needsSort) {
             this._sorted = [...this._nodes].sort((a, b) => a.layer - b.layer);
             this._needsSort = false;
         }
         return this._sorted;
-    }
-
-    private _drawGrid({
-        size = 20,
-        color = "#F0F0F0",
-        style = "lines",
-        lineWidth = style === "dots" ? 2 : 1,
-    }: GridOptions): void {
-        if (size <= 0) {
-            return;
-        }
-
-        // Draw in device pixels, snapped to whole pixels, so the grid stays
-        // sharp at any pixel ratio.
-        const ratio = this._pixelRatio;
-        const thickness = Math.max(1, Math.round(lineWidth * ratio));
-        const snap = (position: number) => Math.round(position * ratio - thickness / 2);
-
-        this.context.save();
-        this.context.setTransform(1, 0, 0, 1, 0, 0);
-        this.context.fillStyle = color;
-
-        if (style === "dots") {
-            const radius = thickness / 2;
-            this.context.beginPath();
-            for (let x = 0; x <= this._width; x += size) {
-                for (let y = 0; y <= this._height; y += size) {
-                    const centerX = snap(x) + radius;
-                    const centerY = snap(y) + radius;
-                    this.context.moveTo(centerX + radius, centerY);
-                    this.context.arc(centerX, centerY, radius, 0, Math.PI * 2);
-                }
-            }
-            this.context.fill();
-        } else {
-            for (let x = 0; x <= this._width; x += size) {
-                this.context.fillRect(snap(x), 0, thickness, this.canvas.height);
-            }
-            for (let y = 0; y <= this._height; y += size) {
-                this.context.fillRect(0, snap(y), this.canvas.width, thickness);
-            }
-        }
-
-        this.context.restore();
     }
 
     private _fitToParent(parent: HTMLElement): void {

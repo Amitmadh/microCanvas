@@ -28,8 +28,11 @@ export class Rectangle extends Shape {
     }
 
     /**
-     * The same answer as Shape's path test, worked out directly, which is
-     * several times faster.
+     * @method containsLocalPoint
+     * @description The same answer as Shape's path test, worked out directly,
+     * which is several times faster.
+     * @param point The point in the rectangle's own coordinate space.
+     * @returns True if the point is on the fill or the stroke.
      */
     protected containsLocalPoint({ x, y }: Point): boolean {
         const bounds = this.getLocalBounds();
@@ -53,7 +56,15 @@ export class Rectangle extends Shape {
     }
 }
 
-/** Whether a point is in a box grown by margin on every side. */
+/**
+ * @function isInside
+ * @description Whether a point is in a box grown by margin on every side.
+ * @param x The point's x.
+ * @param y The point's y.
+ * @param box The box to test against.
+ * @param margin How far to grow the box; a negative margin shrinks it.
+ * @returns True if the point is inside.
+ */
 function isInside(x: number, y: number, box: Rect, margin: number): boolean {
     return x >= box.x - margin && x <= box.x + box.width + margin
         && y >= box.y - margin && y <= box.y + box.height + margin;

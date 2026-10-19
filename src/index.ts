@@ -1,5 +1,5 @@
 export { Canvas } from "./canvas.js";
-export type { CanvasOptions, GridOptions } from "./canvas.js";
+export type { CanvasOptions } from "./canvas.js";
 export { Node } from "./node.js";
 export type { NodeOptions } from "./node.js";
 export { Shape } from "./shape.js";
