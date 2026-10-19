@@ -1,7 +1,7 @@
-import { Node, type NodeOptions } from "./node.js";
+import { McNode, type McNodeOptions } from "./node.js";
 import type { Point, Rect } from "./types.js";
 
-export interface ImageOptions extends NodeOptions {
+export interface McImageOptions extends McNodeOptions {
     image: HTMLImageElement;
     /** Defaults to the image's own width, which is 0 until it has loaded. */
     width?: number;
@@ -10,23 +10,23 @@ export interface ImageOptions extends NodeOptions {
 }
 
 /**
- * @class Image
+ * @class McImage
  * @description A picture with its top-left corner at the node's position.
- * Nothing shows until it has loaded; use Image.load() to load one from a URL.
+ * Nothing shows until it has loaded; use McImage.load() to load one from a URL.
  */
-export class Image extends Node {
+export class McImage extends McNode {
     image: HTMLImageElement;
     width: number;
     height: number;
 
-    constructor({ image, width = image.naturalWidth, height = image.naturalHeight, ...options }: ImageOptions) {
+    constructor({ image, width = image.naturalWidth, height = image.naturalHeight, ...options }: McImageOptions) {
         super(options);
         this.image = image;
         this.width = width;
         this.height = height;
     }
 
-    static async load(url: string, options: Omit<ImageOptions, "image"> = {}): Promise<Image> {
+    static async load(url: string, options: Omit<McImageOptions, "image"> = {}): Promise<McImage> {
         const element = document.createElement("img");
         element.src = url;
         try {
@@ -34,7 +34,7 @@ export class Image extends Node {
         } catch {
             throw new Error(`Could not load image "${url}".`);
         }
-        return new Image({ ...options, image: element });
+        return new McImage({ ...options, image: element });
     }
 
     getLocalBounds(): Rect {

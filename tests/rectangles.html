@@ -21,7 +21,7 @@
 <body>
     <canvas></canvas>
     <script type="module">
-        import { Canvas, Rectangle, Text } from "../dist/index.js";
+        import { Canvas, Rectangle, McText } from "../dist/index.js";
 
         const canvas = new Canvas(document.querySelector("canvas"));
 
@@ -52,11 +52,11 @@
         ];
 
         for (const [text, rectangle] of cases) {
-            canvas.add(new Text({ text, x: rectangle.x, y: rectangle.y - 12 }), rectangle);
+            canvas.add(new McText({ text, x: rectangle.x, y: rectangle.y - 12 }), rectangle);
         }
 
         const removed = new Rectangle({ x: 40, y: 460, width: 120, height: 80, fill: "red" });
-        canvas.add(new Text({ text: "Removed (should be empty)", x: 40, y: 448 }), removed);
+        canvas.add(new McText({ text: "Removed (should be empty)", x: 40, y: 448 }), removed);
         canvas.remove(removed);
 
         canvas.render();

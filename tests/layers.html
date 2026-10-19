@@ -21,7 +21,7 @@
 <body>
     <canvas></canvas>
     <script type="module">
-        import { Canvas, Rectangle, Text } from "../dist/index.js";
+        import { Canvas, Rectangle, McText } from "../dist/index.js";
 
         const canvas = new Canvas(document.querySelector("canvas"));
 
@@ -42,19 +42,19 @@
         ];
 
         for (const [text, x, y, layers] of cases) {
-            canvas.add(new Text({ text, x, y: y - 12 }), ...stack(x, y, layers));
+            canvas.add(new McText({ text, x, y: y - 12 }), ...stack(x, y, layers));
         }
 
         // Changing a layer after adding takes effect on the next render.
         const changed = stack(340, 340, [0, 0, 0]);
-        canvas.add(new Text({ text: "Changed after add (red on top)", x: 340, y: 328 }), ...changed);
+        canvas.add(new McText({ text: "Changed after add (red on top)", x: 340, y: 328 }), ...changed);
         changed[0].layer = 1;
 
         // The canvas caches its sorted nodes, so a layer changed after a render
         // has to show up in the next one. Yellow joins red's layer and was
         // added after red, so it goes on top.
         const changedLater = stack(640, 340, [1, 0, 0]);
-        canvas.add(new Text({ text: "Changed after render (yellow on top)", x: 640, y: 328 }), ...changedLater);
+        canvas.add(new McText({ text: "Changed after render (yellow on top)", x: 640, y: 328 }), ...changedLater);
         canvas.render();
         changedLater[1].layer = 1;
 

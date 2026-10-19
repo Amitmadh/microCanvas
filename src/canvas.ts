@@ -1,4 +1,4 @@
-import type { Node } from "./node.js";
+import type { McNode } from "./node.js";
 import type { Paint, Point } from "./types.js";
 
 export interface CanvasOptions {
@@ -21,10 +21,10 @@ export class Canvas {
     readonly context: CanvasRenderingContext2D;
     background: Paint | null;
 
-    private readonly _nodes = new Set<Node>();
+    private readonly _nodes = new Set<McNode>();
     // The nodes in draw order.
-    private _sorted: Node[] = [];
-    // Set when nodes are added or removed, and by Node when a node's layer changes
+    private _sorted: McNode[] = [];
+    // Set when nodes are added or removed, and by McNode when a node's layer changes
     _needsSort = false;
     private readonly _abortController = new AbortController();
     private _resizeObserver: ResizeObserver | null = null;
@@ -76,7 +76,7 @@ export class Canvas {
      * @param nodes The nodes to add.
      * @returns The canvas, for chaining.
      */
-    add(...nodes: Node[]): this {
+    add(...nodes: McNode[]): this {
         for (const node of nodes) {
             if (node._canvas !== this) {
                 node._canvas?.remove(node);
@@ -88,7 +88,7 @@ export class Canvas {
         return this;
     }
 
-    remove(...nodes: Node[]): this {
+    remove(...nodes: McNode[]): this {
         for (const node of nodes) {
             if (node._canvas === this) {
                 node._canvas = null;
@@ -139,7 +139,7 @@ export class Canvas {
      * @param filter Returns false for nodes to look through.
      * @returns The topmost node, or null if there is none.
      */
-    nodeAt(point: Point, filter?: (node: Node) => boolean): Node | null {
+    nodeAt(point: Point, filter?: (node: McNode) => boolean): McNode | null {
         const nodes = this._sortedNodes();
         for (let i = nodes.length - 1; i >= 0; i--) {
             const node = nodes[i];
@@ -190,7 +190,7 @@ export class Canvas {
         });
     }
 
-    private _sortedNodes(): Node[] {
+    private _sortedNodes(): McNode[] {
         if (this._needsSort) {
             this._sorted = [...this._nodes].sort((a, b) => a.layer - b.layer);
             this._needsSort = false;

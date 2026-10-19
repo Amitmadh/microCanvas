@@ -1,7 +1,7 @@
 import type { Canvas } from "./canvas.js";
 import type { Point, Rect } from "./types.js";
 
-export interface NodeOptions {
+export interface McNodeOptions {
     x?: number;
     y?: number;
     rotation?: number;
@@ -13,11 +13,11 @@ export interface NodeOptions {
 }
 
 /**
- * @class Node
+ * @class McNode
  * @description The base of everything drawn on a canvas. Holds the position,
  * rotation, scale, opacity, visibility and layer.
  */
-export abstract class Node {
+export abstract class McNode {
     x: number;
     y: number;
     /** Rotation around the node's position, in radians. */
@@ -39,7 +39,7 @@ export abstract class Node {
         opacity = 1,
         visible = true,
         layer = 0,
-    }: NodeOptions = {}) {
+    }: McNodeOptions = {}) {
         this.x = x;
         this.y = y;
         this.rotation = rotation;

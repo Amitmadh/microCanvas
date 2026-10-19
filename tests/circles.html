@@ -21,7 +21,7 @@
 <body>
     <canvas></canvas>
     <script type="module">
-        import { Canvas, Circle, Text } from "../dist/index.js";
+        import { Canvas, Circle, McText } from "../dist/index.js";
 
         const canvas = new Canvas(document.querySelector("canvas"), {
             background: "#f5f7fa",
@@ -59,11 +59,11 @@
 
         // Circles are positioned by their centre, so labels go above the top-left.
         for (const [text, circle] of cases) {
-            canvas.add(new Text({ text, x: circle.x - 60, y: circle.y - 62 }), circle);
+            canvas.add(new McText({ text, x: circle.x - 60, y: circle.y - 62 }), circle);
         }
 
         const removed = new Circle({ x: 100, y: 510, radius: 50, fill: "red" });
-        canvas.add(new Text({ text: "Removed (should be empty)", x: 40, y: 448 }), removed);
+        canvas.add(new McText({ text: "Removed (should be empty)", x: 40, y: 448 }), removed);
         canvas.remove(removed);
 
         canvas.render();

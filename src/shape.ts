@@ -1,8 +1,8 @@
-import { Node, type NodeOptions } from "./node.js";
+import { McNode, type McNodeOptions } from "./node.js";
 import { sharedContextInstance } from "./scratch.js";
 import type { Paint, Point } from "./types.js";
 
-export interface ShapeOptions extends NodeOptions {
+export interface ShapeOptions extends McNodeOptions {
     fill?: Paint | null;
     stroke?: Paint | null;
     strokeWidth?: number;
@@ -12,7 +12,7 @@ export interface ShapeOptions extends NodeOptions {
  * @class Shape
  * @description A node drawn from a path, with an optional fill and stroke.
  */
-export abstract class Shape extends Node {
+export abstract class Shape extends McNode {
     fill: Paint | null;
     stroke: Paint | null;
     strokeWidth: number;

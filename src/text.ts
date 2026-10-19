@@ -1,8 +1,8 @@
-import { Node, type NodeOptions } from "./node.js";
+import { McNode, type McNodeOptions } from "./node.js";
 import { sharedContextInstance } from "./scratch.js";
 import type { Paint, Rect } from "./types.js";
 
-export interface TextOptions extends NodeOptions {
+export interface McTextOptions extends McNodeOptions {
     text: string;
     fontSize?: number;
     fontFamily?: string;
@@ -14,11 +14,11 @@ export interface TextOptions extends NodeOptions {
 }
 
 /**
- * @class Text
+ * @class McText
  * @description A single line of text, aligned to the node's position by
  * align and baseline.
  */
-export class Text extends Node {
+export class McText extends McNode {
     text: string;
     fontSize: number;
     fontFamily: string;
@@ -38,7 +38,7 @@ export class Text extends Node {
         align = "left",
         baseline = "alphabetic",
         ...options
-    }: TextOptions) {
+    }: McTextOptions) {
         super(options);
         this.text = text;
         this.fontSize = fontSize;
