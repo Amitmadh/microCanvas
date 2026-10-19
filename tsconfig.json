@@ -11,7 +11,7 @@
     "sourceMap": true,
     "strict": true,
     "skipLibCheck": true,
-    "stripInternal": true,
+    "stripInternal": true
   },
   "include": ["src"]
 }

@@ -24,8 +24,8 @@ export class Canvas {
     private readonly _nodes = new Set<McNode>();
     // The nodes in draw order.
     private _sorted: McNode[] = [];
-    /** 
-     * @internal 
+    /**
+     * @internal
      * Set when nodes are added or removed, and by McNode when a node's layer changes.
      */
     _needsSort = false;
@@ -209,6 +209,7 @@ export class Canvas {
         this._resizeObserver = new ResizeObserver(([entry]) => {
             this._setSize(entry.contentRect.width, entry.contentRect.height);
         });
+        this._setSize(parent.clientWidth, parent.clientHeight);
         this._resizeObserver.observe(parent);
     }
 
