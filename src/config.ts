@@ -18,3 +18,5 @@ export const MAX_ZOOM = 10;
 // About 1% zoom per pixel of wheel movement, and at most about 10% per event.
 export const WHEEL_ZOOM_SPEED = 0.01;
 export const MAX_WHEEL_ZOOM_STEP = 0.1;
+
+export const MIN_MOVEMENT_PX = 5;

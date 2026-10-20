@@ -1,6 +1,7 @@
 import {
     MAX_WHEEL_ZOOM_STEP,
     MAX_ZOOM,
+    MIN_MOVEMENT_PX,
     MIN_ZOOM,
     SELECTION_COLOR,
     SELECTION_LINE_WIDTH,
@@ -61,6 +62,7 @@ export class Canvas {
     private readonly _pointers = new Map<number, Point>();
     // Moving a node, panning or pinching.
     private _gesture: Gesture | null = null;
+    private _pendingFrame = 0;
 
     constructor(canvas: HTMLCanvasElement, {
         width,
@@ -156,6 +158,19 @@ export class Canvas {
     }
 
     /**
+     * @method requestRender
+     * @description Renders on the next frame, once however often it's called.
+     */
+    requestRender(): void {
+        if (!this._pendingFrame) {
+            this._pendingFrame = requestAnimationFrame(() => {
+                this._pendingFrame = 0;
+                this.render();
+            });
+        }
+    }
+
+    /**
      * @method pointFromEvent
      * @description Converts an event's position to board coordinates.
      * @param event Anything with clientX and clientY.
@@ -219,6 +234,7 @@ export class Canvas {
     destroy(): void {
         this._stopFitting();
         this._abortController.abort();
+        cancelAnimationFrame(this._pendingFrame);
 
         // Unlink nodes, or one kept after this canvas is gone keeps it alive.
         for (const node of this._nodes) {
@@ -309,14 +325,14 @@ export class Canvas {
             this.canvas.setPointerCapture(event.pointerId);
             this._gesture?.end?.();
             this._gesture = this._pointers.size === 2 ? this._pinch() : this._press();
-            this.render();
+            this.requestRender();
         });
 
         this._listen<PointerEvent>(this.canvas, "pointermove", (event) => {
             if (this._pointers.has(event.pointerId)) {
                 this._pointers.set(event.pointerId, this._screenPoint(event));
                 this._gesture?.update();
-                this.render();
+                this.requestRender();
             }
         });
 
@@ -324,7 +340,7 @@ export class Canvas {
         this._listen<PointerEvent>(this.canvas, "lostpointercapture", (event) => {
             if (this._pointers.delete(event.pointerId)) {
                 this._gesture?.end?.();
-                this._gesture = null;
+                this._gesture = this._pointers.size === 1 ? this._pan() : null;
             }
         });
 
@@ -333,7 +349,7 @@ export class Canvas {
             const step = event.deltaY * WHEEL_ZOOM_SPEED;
             const capped = Math.max(-MAX_WHEEL_ZOOM_STEP, Math.min(MAX_WHEEL_ZOOM_STEP, step));
             this.zoomAt(this._screenPoint(event), this.zoom * Math.exp(-capped));
-            this.render();
+            this.requestRender();
         }, { passive: false });
     }
 
@@ -349,16 +365,21 @@ export class Canvas {
     }
 
     private _moveNode(node: McNode, from: Point): Gesture {
+        const [start] = this._pointers.values();
         const offsetX = node.x - from.x;
         const offsetY = node.y - from.y;
         let moved = false;
         return {
             update: () => {
                 const [screenPoint] = this._pointers.values();
+                if (!moved && Math.abs(screenPoint.x - start.x) + Math.abs(screenPoint.y - start.y) < MIN_MOVEMENT_PX) {
+                    return;
+                }
+                moved = true;
                 const to = this.screenToBoard(screenPoint);
                 node.x = to.x + offsetX;
                 node.y = to.y + offsetY;
-                moved = true;
+                this.onChange?.(node);
             },
             end: () => {
                 if (moved && node === this.selected) {
@@ -407,6 +428,9 @@ export class Canvas {
     }
 
     private _setView(zoom: number, boardPoint: Point, screenPoint: Point): void {
+        if (!Number.isFinite(zoom)) {
+            return;
+        }
         this.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
         this.panX = screenPoint.x - boardPoint.x * this.zoom;
         this.panY = screenPoint.y - boardPoint.y * this.zoom;
