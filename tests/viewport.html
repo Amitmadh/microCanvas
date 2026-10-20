@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+    Interactive test for the viewport. Run `npm run build` first, then open
+    this page through a local server (e.g. `npx serve .` and go to
+    /tests/viewport.html). Browsers block module imports on file:// pages.
+
+    Use the wheel or a trackpad pinch to zoom at the pointer, and drag empty
+    space to pan. On a touch screen, drag with one finger to pan and pinch
+    with two to zoom. Two nodes start off screen: one far to the right, one at
+    negative coordinates. The status line shows the zoom and the board point
+    under the pointer.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Viewport test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: white;
+        }
+        #status {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            font: 14px sans-serif;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <div id="status">Zoom 100%</div>
+    <script type="module">
+        import { Canvas, Circle, McText, Rectangle } from "../dist/index.js";
+
+        const canvas = new Canvas(document.querySelector("canvas"));
+        canvas.add(
+            new Rectangle({ x: 40, y: 80, width: 120, height: 80, fill: "tomato", draggable: true }),
+            new Circle({ x: 400, y: 140, radius: 45, fill: "mediumseagreen", draggable: true }),
+            new McText({ text: "Far to the right", x: 1600, y: 300, fontSize: 32, fill: "slateblue", draggable: true }),
+            new Rectangle({ x: -500, y: 500, width: 160, height: 100, fill: "gold", draggable: true }),
+        );
+
+        const status = document.querySelector("#status");
+        function showStatus(event) {
+            const point = canvas.pointFromEvent(event);
+            status.textContent = `Zoom ${Math.round(canvas.zoom * 100)}%, board point ${Math.round(point.x)}, ${Math.round(point.y)}`;
+        }
+        canvas.canvas.addEventListener("pointermove", showStatus);
+        canvas.canvas.addEventListener("wheel", showStatus);
+
+        canvas.render();
+    </script>
+</body>
+</html>

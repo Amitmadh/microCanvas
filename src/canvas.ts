@@ -1,4 +1,11 @@
-import { SELECTION_COLOR, SELECTION_LINE_WIDTH } from "./config.js";
+import {
+    MAX_WHEEL_ZOOM_STEP,
+    MAX_ZOOM,
+    MIN_ZOOM,
+    SELECTION_COLOR,
+    SELECTION_LINE_WIDTH,
+    WHEEL_ZOOM_SPEED,
+} from "./config.js";
 import type { McNode } from "./node.js";
 import type { Paint, Point } from "./types.js";
 
@@ -8,26 +15,33 @@ export interface CanvasOptions {
     background?: Paint | null;
 }
 
+interface Gesture {
+    update(): void;
+    end?(): void;
+}
+
 /**
  * @class Canvas
- * @description A canvas element that nodes are drawn on. Sizes are in CSS
- * pixels, and drawing stays sharp at any pixel ratio. It gets a fixed size
- * if both width and height are passed. Otherwise it fills its parent element
- * and follows its size, or keeps its current size if it has no parent.
- * Pressing a selectable node selects and outlines it, and dragging a draggable
- * one moves it; pressing anywhere else clears the selection.
- * @param canvas The canvas element to draw on.
+ * @description Draws nodes on a canvas element. Without both width and
+ * height, it fills its parent element and follows its size. Nodes are
+ * positioned in board coordinates, which zoom and panX/panY map to screen
+ * coordinates: CSS pixels from the canvas's top-left. The user selects nodes
+ * by pressing them, drags draggable ones, pans by dragging elsewhere and zooms
+ * with the wheel or a pinch.
+ * @param canvas The canvas element.
  * @param options Width and height in CSS pixels, and the background.
  */
 export class Canvas {
     readonly canvas: HTMLCanvasElement;
     readonly context: CanvasRenderingContext2D;
     background: Paint | null;
+    zoom = 1;
+    panX = 0;
+    panY = 0;
     
     selected: McNode | null = null;
-    /** Called when the user selects a node, or with null when they clear the selection. */
     onSelect: ((node: McNode | null) => void) | null = null;
-    /** Called when the user lets go of a node they've moved. */
+    /** Called after the user moves a node. */
     onChange: ((node: McNode) => void) | null = null;
 
     private readonly _nodes = new Set<McNode>();
@@ -35,7 +49,7 @@ export class Canvas {
     private _sorted: McNode[] = [];
     /**
      * @internal
-     * Set when nodes are added or removed, and by McNode when a node's layer changes.
+     * Set when nodes are added or removed, or a layer changes.
      */
     _needsSort = false;
     private readonly _abortController = new AbortController();
@@ -43,9 +57,10 @@ export class Canvas {
     private _width = 0;
     private _height = 0;
     private _pixelRatio = 0;
-    // The drag in progress: the pointer doing it, how that pointer's position
-    // updates the node, and whether it has changed the node yet.
-    private _drag: { pointerId: number; update: (point: Point) => void; changed: boolean } | null = null;
+    // Screen positions of the pressed pointers, by pointer ID.
+    private readonly _pointers = new Map<number, Point>();
+    // Moving a node, panning or pinching.
+    private _gesture: Gesture | null = null;
 
     constructor(canvas: HTMLCanvasElement, {
         width,
@@ -87,8 +102,7 @@ export class Canvas {
 
     /**
      * @method add
-     * @description Adds nodes to the canvas. A node can be in one canvas at a
-     * time, so this takes it out of any other.
+     * @description Adds nodes, taking each out of any other canvas.
      * @param nodes The nodes to add.
      * @returns The canvas, for chaining.
      */
@@ -128,9 +142,13 @@ export class Canvas {
             this.context.restore();
         }
 
+        this.context.save();
+        this.context.translate(this.panX, this.panY);
+        this.context.scale(this.zoom, this.zoom);
         for (const node of this._sortedNodes()) {
             node.render(this.context);
         }
+        this.context.restore();
 
         if (this.selected) {
             this._drawSelection(this.selected);
@@ -139,28 +157,39 @@ export class Canvas {
 
     /**
      * @method pointFromEvent
-     * @description Converts a mouse, pointer or touch event's position to
-     * canvas coordinates, the space nodes are positioned in.
-     * @param event The event, or anything with clientX and clientY.
-     * @returns The point in canvas coordinates.
+     * @description Converts an event's position to board coordinates.
+     * @param event Anything with clientX and clientY.
+     * @returns The point in board coordinates.
      */
     pointFromEvent(event: { clientX: number; clientY: number }): Point {
-        const rect = this.canvas.getBoundingClientRect();
-        return {
-            x: event.clientX - rect.left - this.canvas.clientLeft,
-            y: event.clientY - rect.top - this.canvas.clientTop,
-        };
+        return this.screenToBoard(this._screenPoint(event));
+    }
+
+    screenToBoard({ x, y }: Point): Point {
+        return { x: (x - this.panX) / this.zoom, y: (y - this.panY) / this.zoom };
+    }
+
+    boardToScreen({ x, y }: Point): Point {
+        return { x: x * this.zoom + this.panX, y: y * this.zoom + this.panY };
+    }
+
+    /**
+     * @method zoomAt
+     * @description Zooms, within MIN_ZOOM and MAX_ZOOM, keeping the board
+     * under a screen point in place.
+     * @param point The screen point to zoom at.
+     * @param zoom The new zoom.
+     */
+    zoomAt(point: Point, zoom: number): void {
+        this._setView(zoom, this.screenToBoard(point), point);
     }
 
     /**
      * @method nodeAt
-     * @description Finds the topmost node at a point in canvas coordinates.
-     * Nodes that render() skips are skipped here too, and so are nodes the
-     * filter rejects, which lets it look through overlays such as a selection
-     * outline.
-     * @param point The point in canvas coordinates.
-     * @param filter Returns false for nodes to look through.
-     * @returns The topmost node, or null if there is none.
+     * @description Finds the topmost visible node at a point.
+     * @param point The point in board coordinates.
+     * @param filter Returns false for nodes to skip.
+     * @returns The node, or null.
      */
     nodeAt(point: Point, filter?: (node: McNode) => boolean): McNode | null {
         const nodes = this._sortedNodes();
@@ -178,10 +207,9 @@ export class Canvas {
 
     /**
      * @method resize
-     * @description Gives the canvas a fixed size, so it stops following its
-     * parent's size.
-     * @param width The new width in CSS pixels.
-     * @param height The new height in CSS pixels.
+     * @description Sets a fixed size, so it stops following its parent.
+     * @param width In CSS pixels.
+     * @param height In CSS pixels.
      */
     resize(width: number, height: number): void {
         this._stopFitting();
@@ -192,8 +220,7 @@ export class Canvas {
         this._stopFitting();
         this._abortController.abort();
 
-        // Nodes link back to their canvas, so unlink them, or a node that's kept
-        // after this canvas is gone would keep it alive.
+        // Unlink nodes, or one kept after this canvas is gone keeps it alive.
         for (const node of this._nodes) {
             node._canvas = null;
         }
@@ -242,12 +269,11 @@ export class Canvas {
             { x: x + width, y },
             { x: x + width, y: y + height },
             { x, y: y + height },
-        ].map((corner) => node.localToCanvas(corner));
+        ].map((corner) => this.boardToScreen(node.localToBoard(corner)));
     }
 
     private _fitToParent(parent: HTMLElement): void {
-        // An inline canvas leaves a descender gap below it, which would grow an
-        // auto-height parent on every resize.
+        // An inline canvas leaves a gap below it that grows an auto-height parent.
         this.canvas.style.display = "block";
         this.canvas.style.position = "absolute";
         this._resizeObserver = new ResizeObserver(([entry]) => {
@@ -271,57 +297,119 @@ export class Canvas {
     }
 
     private _watchPointer(): void {
+        // The canvas handles every touch itself.
+        this.canvas.style.touchAction = "none";
+
         this._listen<PointerEvent>(this.canvas, "pointerdown", (event) => {
-            if (!event.isPrimary || event.button !== 0) {
+            if (event.button !== 0 || this._pointers.size === 2) {
                 return;
             }
 
-            const point = this.pointFromEvent(event);
-            const pressed = this.nodeAt(point, (node) => node.selectable);
-            if (pressed !== this.selected) {
-                this.selected = pressed;
-                this.onSelect?.(pressed);
-            }
-            if (pressed?.draggable) {
-                const offsetX = pressed.x - point.x;
-                const offsetY = pressed.y - point.y;
-                this._drag = {
-                    pointerId: event.pointerId,
-                    update: (to) => {
-                        pressed.x = to.x + offsetX;
-                        pressed.y = to.y + offsetY;
-                    },
-                    changed: false,
-                };
-                this.canvas.setPointerCapture(event.pointerId);
-            }
+            this._pointers.set(event.pointerId, this._screenPoint(event));
+            this.canvas.setPointerCapture(event.pointerId);
+            this._gesture?.end?.();
+            this._gesture = this._pointers.size === 2 ? this._pinch() : this._press();
             this.render();
         });
 
-        // Prevent browser from scrolling or zooming the page while dragging
-        this._listen<TouchEvent>(this.canvas, "touchstart", (event) => {
-            if (this._drag) {
-                event.preventDefault();
-            }
-        }, { passive: false });
-
         this._listen<PointerEvent>(this.canvas, "pointermove", (event) => {
-            if (this._drag?.pointerId === event.pointerId) {
-                this._drag.update(this.pointFromEvent(event));
-                this._drag.changed = true;
+            if (this._pointers.has(event.pointerId)) {
+                this._pointers.set(event.pointerId, this._screenPoint(event));
+                this._gesture?.update();
                 this.render();
             }
         });
 
-        // Capture ends when the pointer is released or the browser cancels it.
+        // Fires when the pointer is released or cancelled.
         this._listen<PointerEvent>(this.canvas, "lostpointercapture", (event) => {
-            if (this._drag?.pointerId === event.pointerId) {
-                if (this.selected && this._drag.changed) {
-                    this.onChange?.(this.selected);
-                }
-                this._drag = null;
+            if (this._pointers.delete(event.pointerId)) {
+                this._gesture?.end?.();
+                this._gesture = null;
             }
         });
+
+        this._listen<WheelEvent>(this.canvas, "wheel", (event) => {
+            event.preventDefault();
+            const step = event.deltaY * WHEEL_ZOOM_SPEED;
+            const capped = Math.max(-MAX_WHEEL_ZOOM_STEP, Math.min(MAX_WHEEL_ZOOM_STEP, step));
+            this.zoomAt(this._screenPoint(event), this.zoom * Math.exp(-capped));
+            this.render();
+        }, { passive: false });
+    }
+
+    private _press(): Gesture {
+        const [screenPoint] = this._pointers.values();
+        const point = this.screenToBoard(screenPoint);
+        const pressed = this.nodeAt(point, (node) => node.selectable);
+        if (pressed !== this.selected) {
+            this.selected = pressed;
+            this.onSelect?.(pressed);
+        }
+        return pressed?.draggable ? this._moveNode(pressed, point) : this._pan();
+    }
+
+    private _moveNode(node: McNode, from: Point): Gesture {
+        const offsetX = node.x - from.x;
+        const offsetY = node.y - from.y;
+        let moved = false;
+        return {
+            update: () => {
+                const [screenPoint] = this._pointers.values();
+                const to = this.screenToBoard(screenPoint);
+                node.x = to.x + offsetX;
+                node.y = to.y + offsetY;
+                moved = true;
+            },
+            end: () => {
+                if (moved && node === this.selected) {
+                    this.onChange?.(node);
+                }
+            },
+        };
+    }
+
+    private _pan(): Gesture {
+        const [screenPoint] = this._pointers.values();
+        const boardPoint = this.screenToBoard(screenPoint);
+        return {
+            update: () => {
+                const [to] = this._pointers.values();
+                this._setView(this.zoom, boardPoint, to);
+            },
+        };
+    }
+
+    private _pinch(): Gesture {
+        const span = () => {
+            const [a, b] = this._pointers.values();
+            return {
+                distance: Math.hypot(b.x - a.x, b.y - a.y),
+                center: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+            };
+        };
+        const start = span();
+        const startZoomDivDist = this.zoom / start.distance
+        const boardPoint = this.screenToBoard(start.center);
+        return {
+            update: () => {
+                const { distance, center } = span();
+                this._setView(startZoomDivDist * distance, boardPoint, center);
+            },
+        };
+    }
+
+    private _screenPoint(event: { clientX: number; clientY: number }): Point {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+            x: event.clientX - rect.left - this.canvas.clientLeft,
+            y: event.clientY - rect.top - this.canvas.clientTop,
+        };
+    }
+
+    private _setView(zoom: number, boardPoint: Point, screenPoint: Point): void {
+        this.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+        this.panX = screenPoint.x - boardPoint.x * this.zoom;
+        this.panY = screenPoint.y - boardPoint.y * this.zoom;
     }
 
     private _setSize(width: number, height: number): void {
@@ -339,11 +427,10 @@ export class Canvas {
         this.canvas.style.height = `${height}px`;
         this.canvas.width = Math.round(width * pixelRatio);
         this.canvas.height = Math.round(height * pixelRatio);
-        // Resizing the backing store resets the context state, so the scale
-        // has to be reapplied every time.
+        // Resizing resets the context, so the scale is reapplied.
         this.context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-        // Resizing also clears the canvas, so the nodes are redrawn right away.
+        // Resizing also clears the canvas.
         this.render();
     }
 }
