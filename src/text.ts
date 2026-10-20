@@ -36,6 +36,8 @@ export class McText extends McNode {
     fill: Paint;
     align: "left" | "center" | "right";
     baseline: CanvasTextBaseline;
+    private _cachedFont: string;
+    private _cachedBounds: Rect;
 
     constructor({
         text,
@@ -57,6 +59,9 @@ export class McText extends McNode {
         this.fill = fill;
         this.align = align;
         this.baseline = baseline;
+
+        this._cachedFont = this._font();
+        this._cachedBounds = this.getLocalBounds();
     }
 
     /**
@@ -66,8 +71,13 @@ export class McText extends McNode {
      * @returns The box in the text's own space.
      */
     getLocalBounds(): Rect {
+        const font = this._font();
+        if (font === this._cachedFont) {
+            return this._cachedBounds;
+        }
+
         const context = sharedContextInstance();
-        context.font = this._font();
+        context.font = font;
         context.textBaseline = this.baseline;
         const metrics = context.measureText(this.text);
 
@@ -82,7 +92,11 @@ export class McText extends McNode {
 
         const ascent = metrics.fontBoundingBoxAscent;
         const descent = metrics.fontBoundingBoxDescent;
-        return { x, y: -ascent, width, height: ascent + descent };
+        const bounds = { x, y: -ascent, width, height: ascent + descent };
+        
+        this._cachedFont = font;
+        this._cachedBounds = bounds;
+        return bounds;
     }
 
     protected draw(context: CanvasRenderingContext2D): void {
