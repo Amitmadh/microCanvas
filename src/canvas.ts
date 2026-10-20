@@ -9,7 +9,7 @@ import {
 } from "./config.js";
 import type { McNode } from "./node.js";
 import { Shape } from "./shape.js";
-import type { Paint, Point } from "./types.js";
+import type { Paint, Point, Rect } from "./types.js";
 
 export interface CanvasOptions {
     width?: number;
@@ -151,11 +151,20 @@ export class Canvas {
             this.context.restore();
         }
 
+        // Only nodes overlapping the visible part of the board are drawn.
+        const view = {
+            x: -this.panX / this.zoom,
+            y: -this.panY / this.zoom,
+            width: this._width / this.zoom,
+            height: this._height / this.zoom,
+        };
         this.context.save();
         this.context.translate(this.panX, this.panY);
         this.context.scale(this.zoom, this.zoom);
         for (const node of this._sortedNodes()) {
-            node.render(this.context);
+            if (this._overlaps(this._boardRect(node), view)) {
+                node.render(this.context);
+            }
         }
         this.context.restore();
 
@@ -303,19 +312,46 @@ export class Canvas {
     }
 
     private _outlineCorners(node: McNode): Point[] {
+        const { x, y, width, height } = this._strokedBounds(node);
+        return [
+            { x, y },
+            { x: x + width, y },
+            { x: x + width, y: y + height },
+            { x, y: y + height },
+        ].map((corner) => this.boardToScreen(node.localToBoard(corner)));
+    }
+
+    private _strokedBounds(node: McNode): Rect {
         const { x, y, width, height } = node.getLocalBounds();
         // A stroke reaches half its width outside the bounds.
-        let half = 0;
-        if (node instanceof Shape && node.stroke) {
-            half = node.strokeWidth / 2;
-        }
-        
-        return [
-            { x: x - half, y: y - half },
-            { x: x + width + half, y: y - half },
-            { x: x + width + half, y: y + height + half },
-            { x: x - half, y: y + height + half },
-        ].map((corner) => this.boardToScreen(node.localToBoard(corner)));
+        const half = node instanceof Shape && node.stroke ? node.strokeWidth / 2 : 0;
+        return { x: x - half, y: y - half, width: width + 2 * half, height: height + 2 * half };
+    }
+
+    // The node's box on the board, along the board's axes.
+    private _boardRect(node: McNode): Rect {
+        const bounds = this._strokedBounds(node);
+        const cos = Math.cos(node.rotation);
+        const sin = Math.sin(node.rotation);
+
+        // Where the box's centre lands on the board, as localToBoard() would put it.
+        const localX = (bounds.x + bounds.width / 2) * node.scaleX;
+        const localY = (bounds.y + bounds.height / 2) * node.scaleY;
+        const centerX = node.x + localX * cos - localY * sin;
+        const centerY = node.y + localX * sin + localY * cos;
+
+        const scaledWidth = Math.abs(bounds.width * node.scaleX);
+        const scaledHeight = Math.abs(bounds.height * node.scaleY);
+        // A box turned by an angle needs this much room along each axis.
+        const width = scaledWidth * Math.abs(cos) + scaledHeight * Math.abs(sin);
+        const height = scaledWidth * Math.abs(sin) + scaledHeight * Math.abs(cos);
+
+        return { x: centerX - width / 2, y: centerY - height / 2, width, height };
+    }
+
+    private _overlaps(a: Rect, b: Rect): boolean {
+        return a.x <= b.x + b.width && b.x <= a.x + a.width
+            && a.y <= b.y + b.height && b.y <= a.y + a.height;
     }
 
     private _fitToParent(parent: HTMLElement): void {
