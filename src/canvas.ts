@@ -1,3 +1,4 @@
+import { SELECTION_COLOR, SELECTION_LINE_WIDTH } from "./config.js";
 import type { McNode } from "./node.js";
 import type { Paint, Point } from "./types.js";
 
@@ -13,6 +14,8 @@ export interface CanvasOptions {
  * pixels, and drawing stays sharp at any pixel ratio. It gets a fixed size
  * if both width and height are passed. Otherwise it fills its parent element
  * and follows its size, or keeps its current size if it has no parent.
+ * Pressing a selectable node selects and outlines it, and dragging a draggable
+ * one moves it; pressing anywhere else clears the selection.
  * @param canvas The canvas element to draw on.
  * @param options Width and height in CSS pixels, and the background.
  */
@@ -20,6 +23,12 @@ export class Canvas {
     readonly canvas: HTMLCanvasElement;
     readonly context: CanvasRenderingContext2D;
     background: Paint | null;
+    
+    selected: McNode | null = null;
+    /** Called when the user selects a node, or with null when they clear the selection. */
+    onSelect: ((node: McNode | null) => void) | null = null;
+    /** Called when the user lets go of a node they've moved. */
+    onChange: ((node: McNode) => void) | null = null;
 
     private readonly _nodes = new Set<McNode>();
     // The nodes in draw order.
@@ -34,6 +43,9 @@ export class Canvas {
     private _width = 0;
     private _height = 0;
     private _pixelRatio = 0;
+    // The drag in progress: the pointer doing it, how that pointer's position
+    // updates the node, and whether it has changed the node yet.
+    private _drag: { pointerId: number; update: (point: Point) => void; changed: boolean } | null = null;
 
     constructor(canvas: HTMLCanvasElement, {
         width,
@@ -58,6 +70,7 @@ export class Canvas {
         }
 
         this._watchPixelRatio();
+        this._watchPointer();
     }
 
     get width(): number {
@@ -96,6 +109,9 @@ export class Canvas {
             if (node._canvas === this) {
                 node._canvas = null;
                 this._nodes.delete(node);
+                if (node === this.selected) {
+                    this.selected = null;
+                }
             }
         }
         this._needsSort = true;
@@ -114,6 +130,10 @@ export class Canvas {
 
         for (const node of this._sortedNodes()) {
             node.render(this.context);
+        }
+
+        if (this.selected) {
+            this._drawSelection(this.selected);
         }
     }
 
@@ -179,6 +199,7 @@ export class Canvas {
         }
         this._nodes.clear();
         this._needsSort = true;
+        this.selected = null;
     }
 
     private _listen<E extends Event>(
@@ -199,6 +220,29 @@ export class Canvas {
             this._needsSort = false;
         }
         return this._sorted;
+    }
+
+    private _drawSelection(node: McNode): void {
+        this.context.save();
+        this.context.beginPath();
+        for (const corner of this._selectionCorners(node)) {
+            this.context.lineTo(corner.x, corner.y);
+        }
+        this.context.closePath();
+        this.context.strokeStyle = SELECTION_COLOR;
+        this.context.lineWidth = SELECTION_LINE_WIDTH;
+        this.context.stroke();
+        this.context.restore();
+    }
+
+    private _selectionCorners(node: McNode): Point[] {
+        const { x, y, width, height } = node.getLocalBounds();
+        return [
+            { x, y },
+            { x: x + width, y },
+            { x: x + width, y: y + height },
+            { x, y: y + height },
+        ].map((corner) => node.localToCanvas(corner));
     }
 
     private _fitToParent(parent: HTMLElement): void {
@@ -224,6 +268,60 @@ export class Canvas {
             this._setSize(this._width, this._height);
             this._watchPixelRatio();
         }, { once: true });
+    }
+
+    private _watchPointer(): void {
+        this._listen<PointerEvent>(this.canvas, "pointerdown", (event) => {
+            if (!event.isPrimary || event.button !== 0) {
+                return;
+            }
+
+            const point = this.pointFromEvent(event);
+            const pressed = this.nodeAt(point, (node) => node.selectable);
+            if (pressed !== this.selected) {
+                this.selected = pressed;
+                this.onSelect?.(pressed);
+            }
+            if (pressed?.draggable) {
+                const offsetX = pressed.x - point.x;
+                const offsetY = pressed.y - point.y;
+                this._drag = {
+                    pointerId: event.pointerId,
+                    update: (to) => {
+                        pressed.x = to.x + offsetX;
+                        pressed.y = to.y + offsetY;
+                    },
+                    changed: false,
+                };
+                this.canvas.setPointerCapture(event.pointerId);
+            }
+            this.render();
+        });
+
+        // Prevent browser from scrolling or zooming the page while dragging
+        this._listen<TouchEvent>(this.canvas, "touchstart", (event) => {
+            if (this._drag) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        this._listen<PointerEvent>(this.canvas, "pointermove", (event) => {
+            if (this._drag?.pointerId === event.pointerId) {
+                this._drag.update(this.pointFromEvent(event));
+                this._drag.changed = true;
+                this.render();
+            }
+        });
+
+        // Capture ends when the pointer is released or the browser cancels it.
+        this._listen<PointerEvent>(this.canvas, "lostpointercapture", (event) => {
+            if (this._drag?.pointerId === event.pointerId) {
+                if (this.selected && this._drag.changed) {
+                    this.onChange?.(this.selected);
+                }
+                this._drag = null;
+            }
+        });
     }
 
     private _setSize(width: number, height: number): void {

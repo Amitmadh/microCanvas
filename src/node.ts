@@ -10,12 +10,15 @@ export interface McNodeOptions {
     opacity?: number;
     visible?: boolean;
     layer?: number;
+    selectable?: boolean;
+    draggable?: boolean;
 }
 
 /**
  * @class McNode
  * @description The base of everything drawn on a canvas. Holds the position,
- * rotation, scale, opacity, visibility and layer.
+ * rotation, scale, opacity, visibility, layer, and whether it's selectable and
+ * draggable.
  */
 export abstract class McNode {
     x: number;
@@ -32,6 +35,8 @@ export abstract class McNode {
      */
     _canvas: Canvas | null = null;
     private _layer: number;
+    private _selectable: boolean;
+    private _draggable: boolean;
 
     constructor({
         x = 0,
@@ -42,6 +47,8 @@ export abstract class McNode {
         opacity = 1,
         visible = true,
         layer = 0,
+        selectable = false,
+        draggable = false,
     }: McNodeOptions = {}) {
         this.x = x;
         this.y = y;
@@ -51,6 +58,9 @@ export abstract class McNode {
         this.opacity = opacity;
         this.visible = visible;
         this._layer = layer;
+        this._draggable = draggable;
+        // A draggable node is always selectable.
+        this._selectable = selectable || draggable;
     }
 
     /**
@@ -67,6 +77,36 @@ export abstract class McNode {
             if (this._canvas) {
                 this._canvas._needsSort = true;
             }
+        }
+    }
+
+    /**
+     * Whether the user can select the node on its canvas. A draggable node is
+     * always selectable, so turning this off also turns off draggable.
+     */
+    get selectable(): boolean {
+        return this._selectable;
+    }
+
+    set selectable(selectable: boolean) {
+        this._selectable = selectable;
+        if (!selectable) {
+            this._draggable = false;
+        }
+    }
+
+    /**
+     * Whether the user can move the node by dragging it. A draggable node is
+     * always selectable, so turning this on also turns on selectable.
+     */
+    get draggable(): boolean {
+        return this._draggable;
+    }
+
+    set draggable(draggable: boolean) {
+        this._draggable = draggable;
+        if (draggable) {
+            this._selectable = true;
         }
     }
 
@@ -91,6 +131,24 @@ export abstract class McNode {
      * @returns The box in the node's own coordinate space.
      */
     abstract getLocalBounds(): Rect;
+
+    /**
+     * @method localToCanvas
+     * @description Converts a point from the node's own coordinate space to
+     * canvas coordinates. The inverse of canvasToLocal().
+     * @param point The point in the node's own coordinate space.
+     * @returns The point in canvas coordinates.
+     */
+    localToCanvas({ x, y }: Point): Point {
+        const cos = Math.cos(this.rotation);
+        const sin = Math.sin(this.rotation);
+        const scaledX = x * this.scaleX;
+        const scaledY = y * this.scaleY;
+        return {
+            x: this.x + scaledX * cos - scaledY * sin,
+            y: this.y + scaledX * sin + scaledY * cos,
+        };
+    }
 
     /**
      * @method canvasToLocal
