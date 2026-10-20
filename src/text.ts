@@ -1,3 +1,12 @@
+import {
+    DEFAULT_FILL,
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_FONT_SIZE,
+    DEFAULT_FONT_STYLE,
+    DEFAULT_FONT_WEIGHT,
+    DEFAULT_TEXT_ALIGN,
+    DEFAULT_TEXT_BASELINE,
+} from "./config.js";
 import { McNode, type McNodeOptions } from "./node.js";
 import { sharedContextInstance } from "./scratch.js";
 import type { Paint, Rect } from "./types.js";
@@ -30,13 +39,13 @@ export class McText extends McNode {
 
     constructor({
         text,
-        fontSize = 14,
-        fontFamily = "sans-serif",
-        fontWeight = "normal",
-        fontStyle = "normal",
-        fill = "black",
-        align = "left",
-        baseline = "alphabetic",
+        fontSize = DEFAULT_FONT_SIZE,
+        fontFamily = DEFAULT_FONT_FAMILY,
+        fontWeight = DEFAULT_FONT_WEIGHT,
+        fontStyle = DEFAULT_FONT_STYLE,
+        fill = DEFAULT_FILL,
+        align = DEFAULT_TEXT_ALIGN,
+        baseline = DEFAULT_TEXT_BASELINE,
         ...options
     }: McTextOptions) {
         super(options);

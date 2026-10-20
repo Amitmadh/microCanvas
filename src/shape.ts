@@ -1,3 +1,4 @@
+import { DEFAULT_FILL, DEFAULT_STROKE_WIDTH } from "./config.js";
 import { McNode, type McNodeOptions } from "./node.js";
 import { sharedContextInstance } from "./scratch.js";
 import type { Paint, Point } from "./types.js";
@@ -18,9 +19,9 @@ export abstract class Shape extends McNode {
     strokeWidth: number;
 
     constructor({
-        fill = "black",
+        fill = DEFAULT_FILL,
         stroke = null,
-        strokeWidth = 1,
+        strokeWidth = DEFAULT_STROKE_WIDTH,
         ...options
     }: ShapeOptions = {}) {
         super(options);
