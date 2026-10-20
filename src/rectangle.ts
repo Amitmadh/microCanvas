@@ -1,5 +1,6 @@
 import { Shape, type ShapeOptions } from "./shape.js";
 import type { Point, Rect } from "./types.js";
+import { isInsideRect } from "./util.js";
 
 export interface RectangleOptions extends ShapeOptions {
     width: number;
@@ -32,13 +33,13 @@ export class Rectangle extends Shape {
 
     protected containsLocalPoint({ x, y }: Point): boolean {
         const bounds = this.getLocalBounds();
-        if (this.fill && this._isInside(x, y, bounds)) {
+        if (this.fill && isInsideRect(x, y, bounds)) {
             return true;
         }
 
         if (this.stroke && this.strokeWidth > 0) {
             const half = this.strokeWidth / 2;
-            return this._isInside(x, y, bounds, half) && !this._isInside(x, y, bounds, -half);
+            return isInsideRect(x, y, bounds, half) && !isInsideRect(x, y, bounds, -half);
         }
 
         return false;
@@ -46,10 +47,5 @@ export class Rectangle extends Shape {
 
     protected tracePath(context: CanvasRenderingContext2D): void {
         context.rect(0, 0, this.width, this.height);
-    }
-
-    private _isInside(x: number, y: number, box: Rect, margin: number = 0): boolean {
-        return x >= box.x - margin && x <= box.x + box.width + margin
-            && y >= box.y - margin && y <= box.y + box.height + margin;
     }
 }

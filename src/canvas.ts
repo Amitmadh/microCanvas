@@ -10,6 +10,7 @@ import {
 import type { McNode } from "./node.js";
 import { Shape } from "./shape.js";
 import type { Paint, Point, Rect } from "./types.js";
+import { clamp, distance, manhattanDistance, midpoint, rectsOverlap } from "./util.js";
 
 export interface CanvasOptions {
     width?: number;
@@ -162,7 +163,7 @@ export class Canvas {
         this.context.translate(this.panX, this.panY);
         this.context.scale(this.zoom, this.zoom);
         for (const node of this._sortedNodes()) {
-            if (this._overlaps(this._boardRect(node), view)) {
+            if (rectsOverlap(this._boardRect(node), view)) {
                 node.render(this.context);
             }
         }
@@ -349,11 +350,6 @@ export class Canvas {
         return { x: centerX - width / 2, y: centerY - height / 2, width, height };
     }
 
-    private _overlaps(a: Rect, b: Rect): boolean {
-        return a.x <= b.x + b.width && b.x <= a.x + a.width
-            && a.y <= b.y + b.height && b.y <= a.y + a.height;
-    }
-
     private _fitToParent(parent: HTMLElement): void {
         // Block, so a parent's text-align doesn't shift the canvas.
         this.canvas.style.display = "block";
@@ -415,7 +411,7 @@ export class Canvas {
             // Trackpad pinches arrive as wheel events with ctrlKey set.
             if (event.ctrlKey) {
                 const step = event.deltaY * WHEEL_ZOOM_SPEED;
-                const capped = Math.max(-MAX_WHEEL_ZOOM_STEP, Math.min(MAX_WHEEL_ZOOM_STEP, step));
+                const capped = clamp(step, -MAX_WHEEL_ZOOM_STEP, MAX_WHEEL_ZOOM_STEP);
                 this.zoomAt(this._screenPoint(event), this.zoom * Math.exp(-capped));
             } else {
                 this.panX -= event.deltaX;
@@ -444,7 +440,7 @@ export class Canvas {
         return {
             update: () => {
                 const [screenPoint] = this._pointers.values();
-                if (!moved && Math.abs(screenPoint.x - start.x) + Math.abs(screenPoint.y - start.y) < MIN_MOVEMENT_PX) {
+                if (!moved && manhattanDistance(start, screenPoint) < MIN_MOVEMENT_PX) {
                     return;
                 }
                 moved = true;
@@ -473,20 +469,13 @@ export class Canvas {
     }
 
     private _pinch(): Gesture {
-        const span = () => {
-            const [a, b] = this._pointers.values();
-            return {
-                distance: Math.hypot(b.x - a.x, b.y - a.y),
-                center: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-            };
-        };
-        const start = span();
-        const startZoomDivDist = this.zoom / start.distance
-        const boardPoint = this.screenToBoard(start.center);
+        const [a, b] = this._pointers.values();
+        const startZoomDivDist = this.zoom / distance(a, b);
+        const boardPoint = this.screenToBoard(midpoint(a, b));
         return {
             update: () => {
-                const { distance, center } = span();
-                this._setView(startZoomDivDist * distance, boardPoint, center);
+                const [a, b] = this._pointers.values();
+                this._setView(startZoomDivDist * distance(a, b), boardPoint, midpoint(a, b));
             },
         };
     }
@@ -503,7 +492,7 @@ export class Canvas {
         if (!Number.isFinite(zoom)) {
             return;
         }
-        this.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+        this.zoom = clamp(zoom, MIN_ZOOM, MAX_ZOOM);
         this.panX = screenPoint.x - boardPoint.x * this.zoom;
         this.panY = screenPoint.y - boardPoint.y * this.zoom;
     }
