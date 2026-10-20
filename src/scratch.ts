@@ -2,10 +2,8 @@ let sharedContext: CanvasRenderingContext2D | null = null;
 
 /**
  * @function sharedContextInstance
- * @description A 2D context that is never shown, shared by all nodes for
- * measuring text and testing points against paths. Its transform is always
- * the identity, so a path traced on it is in whatever space the caller is
- * working in.
+ * @description A hidden 2D context shared for measuring text and testing
+ * points against paths. Its transform is always the identity.
  * @returns The shared context, created on first use.
  */
 export function sharedContextInstance(): CanvasRenderingContext2D {

@@ -3,16 +3,15 @@ import type { Point, Rect } from "./types.js";
 
 export interface McImageOptions extends McNodeOptions {
     image: HTMLImageElement;
-    /** Defaults to the image's own width, which is 0 until it has loaded. */
+    /** Defaults to the image's natural width, 0 until it loads. */
     width?: number;
-    /** Defaults to the image's own height, which is 0 until it has loaded. */
+    /** Defaults to the image's natural height, 0 until it loads. */
     height?: number;
 }
 
 /**
  * @class McImage
  * @description A picture with its top-left corner at the node's position.
- * Nothing shows until it has loaded; use McImage.load() to load one from a URL.
  */
 export class McImage extends McNode {
     image: HTMLImageElement;
@@ -50,10 +49,10 @@ export class McImage extends McNode {
 
     /**
      * @method containsLocalPoint
-     * @description Hits anywhere in the image's box, transparent pixels
-     * included, but only once there's something drawn.
-     * @param point The point in the image's own coordinate space.
-     * @returns True if the image has loaded and the point is in its box.
+     * @description Hits anywhere in the box, transparent pixels included,
+     * once the image has loaded.
+     * @param point The point in the image's own space.
+     * @returns Whether the point is hit.
      */
     protected containsLocalPoint(point: Point): boolean {
         return this._isLoaded() && super.containsLocalPoint(point);

@@ -21,8 +21,7 @@ export class Rectangle extends Shape {
     }
 
     getLocalBounds(): Rect {
-        // A negative width or height draws to the left of or above the
-        // node's position.
+        // A negative width or height draws left of or above the position.
         return {
             x: Math.min(this.width, 0),
             y: Math.min(this.height, 0),

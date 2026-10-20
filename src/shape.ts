@@ -39,7 +39,7 @@ export abstract class Shape extends McNode {
             context.fill();
         }
 
-        // The context ignores a lineWidth of 0 and would keep the previous one.
+        // The context ignores a lineWidth of 0.
         if (this.stroke && this.strokeWidth > 0) {
             context.strokeStyle = this.stroke;
             context.lineWidth = this.strokeWidth;
@@ -49,10 +49,9 @@ export abstract class Shape extends McNode {
 
     /**
      * @method containsLocalPoint
-     * @description Only the painted parts of a shape are hit: inside it if it
-     * has a fill, and on its outline if it has a stroke.
-     * @param point The point in the shape's own coordinate space.
-     * @returns True if the point is on a painted part.
+     * @description Only the fill and stroke are hit.
+     * @param point The point in the shape's own space.
+     * @returns Whether the point is hit.
      */
     protected containsLocalPoint({ x, y }: Point): boolean {
         const context = sharedContextInstance();
@@ -73,8 +72,8 @@ export abstract class Shape extends McNode {
 
     /**
      * @method tracePath
-     * @description Adds the shape's outline to the current path, in the
-     * node's own coordinate space. Filling and stroking are done by Shape.
+     * @description Adds the shape's outline to the current path, in its own
+     * space. Shape fills and strokes it.
      * @param context The context whose path to add to.
      */
     protected abstract tracePath(context: CanvasRenderingContext2D): void;

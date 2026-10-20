@@ -61,9 +61,9 @@ export class McText extends McNode {
 
     /**
      * @method getLocalBounds
-     * @description The text's advance width by the font's full height, so the
-     * box doesn't change with which letters are in it.
-     * @returns The box in the text's own coordinate space.
+     * @description The advance width by the font's full height, so the box
+     * doesn't depend on which letters are in it.
+     * @returns The box in the text's own space.
      */
     getLocalBounds(): Rect {
         const context = sharedContextInstance();
@@ -71,9 +71,7 @@ export class McText extends McNode {
         context.textBaseline = this.baseline;
         const metrics = context.measureText(this.text);
 
-        // With the baseline set, the font's ascent and descent are measured
-        // from the node's position. "start" and "end" are taken as
-        // left-to-right.
+        // With the baseline set, ascent and descent start at the position.
         const width = metrics.width;
         let x = 0;
         if (this.align === "center") {
