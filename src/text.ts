@@ -36,8 +36,8 @@ export class McText extends McNode {
     fill: Paint;
     align: "left" | "center" | "right";
     baseline: CanvasTextBaseline;
-    private _cachedFont: string;
-    private _cachedBounds: Rect;
+    private _boundsKey = "";
+    private _bounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
     constructor({
         text,
@@ -59,9 +59,6 @@ export class McText extends McNode {
         this.fill = fill;
         this.align = align;
         this.baseline = baseline;
-
-        this._cachedFont = this._font();
-        this._cachedBounds = this.getLocalBounds();
     }
 
     /**
@@ -72,8 +69,9 @@ export class McText extends McNode {
      */
     getLocalBounds(): Rect {
         const font = this._font();
-        if (font === this._cachedFont) {
-            return this._cachedBounds;
+        const key = `${font}|${this.align}|${this.baseline}|${this.text}`;
+        if (key === this._boundsKey) {
+            return this._bounds;
         }
 
         const context = sharedContextInstance();
@@ -94,8 +92,8 @@ export class McText extends McNode {
         const descent = metrics.fontBoundingBoxDescent;
         const bounds = { x, y: -ascent, width, height: ascent + descent };
         
-        this._cachedFont = font;
-        this._cachedBounds = bounds;
+        this._boundsKey = key;
+        this._bounds = bounds;
         return bounds;
     }
 
