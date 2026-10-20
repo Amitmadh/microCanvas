@@ -8,7 +8,8 @@
     around. The light blue rectangle is selectable but not draggable, so it's
     selected but stays put. The gray rectangle and the status line are
     neither, so pressing them clears the selection, or picks up a node
-    underneath.
+    underneath. Your selection is deep pink, and the green circle has an
+    orange outline, as if another user had selected it.
 -->
 <html lang="en">
 <head>
@@ -30,6 +31,7 @@
         import { Canvas, Circle, McText, Rectangle } from "../dist/index.js";
 
         const canvas = new Canvas(document.querySelector("canvas"));
+        const circle = new Circle({ x: 520, y: 125, radius: 45, fill: "mediumseagreen", draggable: true });
 
         const names = new Map([
             [new Rectangle({ x: 40, y: 80, width: 120, height: 80, fill: "tomato", draggable: true }), "rectangle"],
@@ -37,7 +39,7 @@
                 x: 260, y: 80, width: 80, height: 50, fill: "gold", draggable: true,
                 rotation: Math.PI / 6, scaleX: 1.5, scaleY: 1.5,
             }), "rotated, scaled rectangle"],
-            [new Circle({ x: 520, y: 125, radius: 45, fill: "mediumseagreen", draggable: true }), "circle"],
+            [circle, "circle"],
             [new McText({ text: "Drag me", x: 40, y: 240, fontSize: 32, fill: "slateblue", draggable: true }), "text"],
             [new Rectangle({ x: 520, y: 240, width: 120, height: 60, fill: "lightskyblue", selectable: true }), "locked rectangle"],
         ]);
@@ -45,6 +47,9 @@
         const fixed = new Rectangle({ x: 300, y: 240, width: 160, height: 60, fill: "lightgray" });
         const status = new McText({ text: "Selected: nothing", x: 40, y: 30, fontSize: 16 });
         canvas.add(...names.keys(), fixed, status);
+
+        canvas.selectionColor = "deeppink";
+        canvas.drawOverlay = () => canvas.drawOutline(circle, "orange");
 
         canvas.onSelect = (node) => {
             status.text = `Selected: ${names.get(node) ?? "nothing"}`;

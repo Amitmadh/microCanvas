@@ -8,6 +8,7 @@ import {
     WHEEL_ZOOM_SPEED,
 } from "./config.js";
 import type { McNode } from "./node.js";
+import { Shape } from "./shape.js";
 import type { Paint, Point } from "./types.js";
 
 export interface CanvasOptions {
@@ -27,8 +28,8 @@ interface Gesture {
  * height, it fills its parent element and follows its size. Nodes are
  * positioned in board coordinates, which zoom and panX/panY map to screen
  * coordinates: CSS pixels from the canvas's top-left. The user selects nodes
- * by pressing them, drags draggable ones, pans by dragging elsewhere and zooms
- * with the wheel or a pinch.
+ * by pressing them, drags draggable ones, pans by dragging elsewhere or
+ * scrolling, and zooms with a pinch or Ctrl+wheel.
  * @param canvas The canvas element.
  * @param options Width and height in CSS pixels, and the background.
  */
@@ -41,6 +42,12 @@ export class Canvas {
     panY = 0;
     
     selected: McNode | null = null;
+    selectionColor: Paint = SELECTION_COLOR;
+    /**
+     * Called after each render with the context in screen coordinates, to
+     * draw other users' selections, cursors and the like.
+     */
+    drawOverlay: ((context: CanvasRenderingContext2D) => void) | null = null;
     onSelect: ((node: McNode | null) => void) | null = null;
     /** Called after the user moves a node. */
     onChange: ((node: McNode) => void) | null = null;
@@ -153,7 +160,13 @@ export class Canvas {
         this.context.restore();
 
         if (this.selected) {
-            this._drawSelection(this.selected);
+            this.drawOutline(this.selected, this.selectionColor);
+        }
+
+        if (this.drawOverlay) {
+            this.context.save();
+            this.drawOverlay(this.context);
+            this.context.restore();
         }
     }
 
@@ -168,6 +181,30 @@ export class Canvas {
                 this.render();
             });
         }
+    }
+
+    /**
+     * @method drawOutline
+     * @description Outlines a node as the selection is outlined, for use in
+     * drawOverlay. Hidden nodes get no outline.
+     * @param node The node to outline.
+     * @param color The outline's colour.
+     */
+    drawOutline(node: McNode, color: Paint): void {
+        if (!node.visible || node.opacity <= 0) {
+            return;
+        }
+
+        this.context.save();
+        this.context.beginPath();
+        for (const corner of this._outlineCorners(node)) {
+            this.context.lineTo(corner.x, corner.y);
+        }
+        this.context.closePath();
+        this.context.strokeStyle = color;
+        this.context.lineWidth = SELECTION_LINE_WIDTH;
+        this.context.stroke();
+        this.context.restore();
     }
 
     /**
@@ -265,31 +302,24 @@ export class Canvas {
         return this._sorted;
     }
 
-    private _drawSelection(node: McNode): void {
-        this.context.save();
-        this.context.beginPath();
-        for (const corner of this._selectionCorners(node)) {
-            this.context.lineTo(corner.x, corner.y);
-        }
-        this.context.closePath();
-        this.context.strokeStyle = SELECTION_COLOR;
-        this.context.lineWidth = SELECTION_LINE_WIDTH;
-        this.context.stroke();
-        this.context.restore();
-    }
-
-    private _selectionCorners(node: McNode): Point[] {
+    private _outlineCorners(node: McNode): Point[] {
         const { x, y, width, height } = node.getLocalBounds();
+        // A stroke reaches half its width outside the bounds.
+        let half = 0;
+        if (node instanceof Shape && node.stroke) {
+            half = node.strokeWidth / 2;
+        }
+        
         return [
-            { x, y },
-            { x: x + width, y },
-            { x: x + width, y: y + height },
-            { x, y: y + height },
+            { x: x - half, y: y - half },
+            { x: x + width + half, y: y - half },
+            { x: x + width + half, y: y + height + half },
+            { x: x - half, y: y + height + half },
         ].map((corner) => this.boardToScreen(node.localToBoard(corner)));
     }
 
     private _fitToParent(parent: HTMLElement): void {
-        // An inline canvas leaves a gap below it that grows an auto-height parent.
+        // Block, so a parent's text-align doesn't shift the canvas.
         this.canvas.style.display = "block";
         this.canvas.style.position = "absolute";
         this._resizeObserver = new ResizeObserver(([entry]) => {
@@ -346,9 +376,15 @@ export class Canvas {
 
         this._listen<WheelEvent>(this.canvas, "wheel", (event) => {
             event.preventDefault();
-            const step = event.deltaY * WHEEL_ZOOM_SPEED;
-            const capped = Math.max(-MAX_WHEEL_ZOOM_STEP, Math.min(MAX_WHEEL_ZOOM_STEP, step));
-            this.zoomAt(this._screenPoint(event), this.zoom * Math.exp(-capped));
+            // Trackpad pinches arrive as wheel events with ctrlKey set.
+            if (event.ctrlKey) {
+                const step = event.deltaY * WHEEL_ZOOM_SPEED;
+                const capped = Math.max(-MAX_WHEEL_ZOOM_STEP, Math.min(MAX_WHEEL_ZOOM_STEP, step));
+                this.zoomAt(this._screenPoint(event), this.zoom * Math.exp(-capped));
+            } else {
+                this.panX -= event.deltaX;
+                this.panY -= event.deltaY;
+            }
             this.requestRender();
         }, { passive: false });
     }
