@@ -171,6 +171,15 @@ export class Canvas {
         }
         this.context.restore();
 
+        // Text drawn in a fallback font is drawn again once its web font loads.
+        if (document.fonts.status === "loading") {
+            document.fonts.ready.then(() => {
+                if (!this._abortController.signal.aborted) {
+                    this.requestRender();
+                }
+            });
+        }
+
         if (this.selected) {
             this.drawOutline(this.selected, this.selectionColor);
         }
