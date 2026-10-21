@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+    Interactive test for hit-testing. Run `npm run build` first, then open
+    this page through a local server (e.g. `npx serve .` and go to
+    /demos/hit-testing.html). Browsers block module imports on file:// pages.
+
+    Move the pointer over the shapes. The topmost one under it is named at
+    the top.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hit-testing test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <script type="module">
+        import { Canvas, Circle, Rectangle, McText } from "../dist/index.js";
+
+        const canvas = new Canvas(document.querySelector("canvas"));
+
+        const names = new Map([
+            [new Rectangle({ x: 40, y: 80, width: 120, height: 80, fill: "tomato" }), "rectangle"],
+            [new Rectangle({
+                x: 260, y: 80, width: 80, height: 50, fill: "gold",
+                rotation: Math.PI / 6, scaleX: 1.5, scaleY: 1.5,
+            }), "rotated, scaled rectangle"],
+            [new Circle({ x: 520, y: 125, radius: 45, fill: "mediumseagreen" }), "circle"],
+            [new Rectangle({
+                x: 640, y: 80, width: 120, height: 80, fill: "lightskyblue", stroke: "navy", strokeWidth: 10,
+            }), "rectangle with stroke"],
+            [new Circle({
+                x: 540, y: 290, radius: 45, fill: null, stroke: "royalblue", strokeWidth: 10,
+            }), "circle without fill"],
+            [new McText({ text: "Some text", x: 40, y: 240, fontSize: 32, fill: "slateblue" }), "text"],
+            // Purple is added first but is on a higher layer, so it's on top.
+            [new Rectangle({ x: 300, y: 240, width: 90, height: 70, fill: "purple", layer: 1 }), "purple, layer 1"],
+            [new Rectangle({ x: 350, y: 270, width: 90, height: 70, fill: "orange" }), "orange, layer 0"],
+        ]);
+
+        const status = new McText({ text: "Hit: nothing", x: 40, y: 30, fontSize: 16 });
+        canvas.add(...names.keys(), status);
+
+        canvas.canvas.addEventListener("pointermove", (event) => {
+            const node = canvas.nodeAt(canvas.pointFromEvent(event));
+            status.text = `Hit: ${names.get(node) ?? "nothing"}`;
+            canvas.render();
+        });
+
+        canvas.render();
+    </script>
+</body>
+</html>
