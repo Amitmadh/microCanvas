@@ -38,9 +38,13 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "node --test"
+    "test": "tsc -p tests && vitest run --browser.headless"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "@types/seedrandom": "^3.0.8",
+    "@vitest/browser-playwright": "^5.0.5",
+    "seedrandom": "^3.0.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }
