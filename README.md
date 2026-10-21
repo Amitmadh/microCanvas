@@ -1,30 +1,36 @@
 # microCanvas
 
-A small TypeScript library for drawing shapes, text and images on an HTML canvas, with layers and hit-testing.
+A small TypeScript library for interactive canvas boards: shapes, text and images, with selecting, dragging, panning and zooming built in.
+
+<!-- Screenshots of demos/viewport.html -->
+<p>
+  <img src="demos/screenshots/viewport-1.png" width="49%" alt="Viewport demo">
+  <img src="demos/screenshots/viewport-2.png" width="49%" alt="Viewport demo, zoomed out">
+</p>
 
 ## Usage
 
 ```ts
-import { Canvas, Rectangle, Circle, McText, McImage } from "microcanvas";
+import { Canvas, Circle, McImage, McText, Rectangle } from "microcanvas";
 
+// Fills its parent element, unless given { width, height } in CSS pixels.
 const canvas = new Canvas(document.querySelector("canvas")!);
 
 canvas.add(
-    new Rectangle({ x: 40, y: 40, width: 120, height: 80, fill: "tomato" }),
+    new Rectangle({ x: 40, y: 40, width: 120, height: 80, fill: "gold", draggable: true }),
     new Circle({ x: 260, y: 80, radius: 40, fill: null, stroke: "navy", strokeWidth: 4 }),
-    new McText({ text: "Hello", x: 40, y: 170, fontSize: 24 }),
+    new McText({ text: "Hello", x: 40, y: 170, fontSize: 24, draggable: true }),
     await McImage.load("photo.jpg", { x: 340, y: 40, width: 160, height: 100 }),
 );
+canvas.onSelect = (node) => console.log("selected", node);
+canvas.onChange = (node) => console.log("moved to", node.x, node.y);
 canvas.render();
-
-canvas.canvas.addEventListener("pointerdown", (event) => {
-    const node = canvas.nodeAt(canvas.pointFromEvent(event)); // topmost node, or null
-});
 ```
 
-- Call `canvas.render()` after changing nodes. The canvas only redraws by itself when it resizes.
-- Every node has `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity`, `visible` and `layer`. Higher layers draw on top.
-- Without `width` and `height`, the canvas fills its parent and follows its size, so the parent needs a size of its own.
+- Users press to select, drag `draggable` nodes, drag empty space or scroll to pan, and pinch or Ctrl+wheel to zoom.
+- After changing anything in code, call `render()`, or `requestRender()` to draw once on the next frame.
+- Every node has `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity`, `visible`, `layer`, `selectable` and `draggable`.
+- `drawOverlay` and `drawOutline(node, color)` draw other users' selections on top.
 
 ## Install
 
@@ -36,9 +42,15 @@ npm run build
 npm install path/to/microCanvas   # in your app
 ```
 
-## Tests
+## Development
 
-Visual tests: run `npx serve .` and open `/tests/*.html`.
+```sh
+npx playwright install chromium firefox webkit   # once
+npm test                        # unit tests in headless Chromium, Firefox and WebKit
+npx vitest --browser=chromium   # unit tests in a visible Chromium, rerun on every change
+npm run build
+npx serve .                     # then open /demos/
+```
 
 ## License
 
