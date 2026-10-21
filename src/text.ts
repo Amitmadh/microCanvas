@@ -63,8 +63,8 @@ export class McText extends McNode {
 
     /**
      * @method getLocalBounds
-     * @description The advance width by the font's full height, so the box
-     * doesn't depend on which letters are in it.
+     * @description The advance width by the font's full height, grown to fit
+     * letters that reach past it, such as italics.
      * @returns The box in the text's own space.
      */
     getLocalBounds(): Rect {
@@ -76,10 +76,11 @@ export class McText extends McNode {
 
         const context = sharedContextInstance();
         context.font = font;
+        context.textAlign = this.align;
         context.textBaseline = this.baseline;
         const metrics = context.measureText(this.text);
 
-        // With the baseline set, ascent and descent start at the position.
+        // With the align and baseline set, the metrics start at the position.
         const width = metrics.width;
         let x = 0;
         if (this.align === "center") {
@@ -88,12 +89,15 @@ export class McText extends McNode {
             x = -width;
         }
 
-        const ascent = metrics.fontBoundingBoxAscent;
-        const descent = metrics.fontBoundingBoxDescent;
-        const bounds = { x, y: -ascent, width, height: ascent + descent };
-        
-        this._boundsKey = key;
+        const left = Math.min(x, -metrics.actualBoundingBoxLeft);
+        const right = Math.max(x + width, metrics.actualBoundingBoxRight);
+        const top = -Math.max(metrics.fontBoundingBoxAscent, metrics.actualBoundingBoxAscent);
+        const bottom = Math.max(metrics.fontBoundingBoxDescent, metrics.actualBoundingBoxDescent);
+        const bounds = { x: left, y: top, width: right - left, height: bottom - top };
+
         this._bounds = bounds;
+        // Until a web font loads, the text is measured in a fallback font.
+        this._boundsKey = document.fonts.check(font, this.text) ? key : "";
         return bounds;
     }
 
