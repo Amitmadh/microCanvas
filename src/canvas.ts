@@ -152,12 +152,14 @@ export class Canvas {
             this.context.restore();
         }
 
-        // Only nodes overlapping the visible part of the board are drawn.
+        // Only nodes overlapping the visible part of the board are drawn. It's
+        // padded by a screen pixel, as a thin stroke is painted past its box.
+        const pad = 1 / this.zoom;
         const view = {
-            x: -this.panX / this.zoom,
-            y: -this.panY / this.zoom,
-            width: this._width / this.zoom,
-            height: this._height / this.zoom,
+            x: -this.panX / this.zoom - pad,
+            y: -this.panY / this.zoom - pad,
+            width: this._width / this.zoom + 2 * pad,
+            height: this._height / this.zoom + 2 * pad,
         };
         this.context.save();
         this.context.translate(this.panX, this.panY);
