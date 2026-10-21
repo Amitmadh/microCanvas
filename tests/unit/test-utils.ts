@@ -15,6 +15,8 @@ export function addCanvas(options: CanvasOptions = { width: 600, height: 200 }, 
     const element = document.createElement("canvas");
     // The browser can't capture the pointers tests make up, so capturing does nothing.
     element.setPointerCapture = () => {};
+    // Tests compare pixels, which a GPU canvas doesn't draw exactly the same every time.
+    element.getContext("2d", { willReadFrequently: true });
     parent.appendChild(element);
     const canvas = new Canvas(element, options);
     onTestFinished(() => canvas.destroy());
