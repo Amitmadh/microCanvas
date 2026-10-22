@@ -23,6 +23,10 @@ export class McImage extends McNode {
         this.image = image;
         this.width = width;
         this.height = height;
+        
+        if (!this._isLoaded()) {
+            this.image.addEventListener("load", () => this._canvas?.requestRender(), { once: true });
+        }
     }
 
     static async load(url: string, options: Omit<McImageOptions, "image"> = {}): Promise<McImage> {
