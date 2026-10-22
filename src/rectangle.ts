@@ -7,6 +7,10 @@ export interface RectangleOptions extends ShapeOptions {
     height: number;
 }
 
+export interface RectangleJSON extends Required<RectangleOptions> {
+    type: "rectangle";
+}
+
 /**
  * A rectangle with its top-left corner at the node's position.
  */
@@ -18,6 +22,10 @@ export class Rectangle extends Shape {
         super(options);
         this.width = width;
         this.height = height;
+    }
+
+    toJSON(): RectangleJSON {
+        return { ...super.toJSON(), type: "rectangle", width: this.width, height: this.height };
     }
 
     getLocalBounds(): Rect {

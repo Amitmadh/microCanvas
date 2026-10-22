@@ -31,6 +31,7 @@ canvas.render();
 - After changing anything in code, call `render()`, or `requestRender()` to draw once on the next frame.
 - Every node has `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity`, `visible`, `layer`, `selectable`, `draggable` and `resizable`.
 - `drawOverlay` draws on top of each render, such as more outlines with `drawOutline(node, color)`.
+- `JSON.stringify(canvas)` saves the background and nodes, images by their URL. `canvas.fromJSON(JSON.parse(saved))` replaces them with the saved ones.
 - To fill a parent, give the canvas a wrapper of its own, with no padding and nothing else inside.
 
 ## Install

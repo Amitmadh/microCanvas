@@ -9,6 +9,11 @@ export interface McImageOptions extends McNodeOptions {
     height?: number;
 }
 
+export interface McImageJSON extends Required<Omit<McImageOptions, "image">> {
+    type: "image";
+    src: string;
+}
+
 /**
  * A picture with its top-left corner at the node's position.
  */
@@ -37,6 +42,10 @@ export class McImage extends McNode {
             throw new Error(`Could not load image "${url}".`);
         }
         return new McImage({ ...options, image: element });
+    }
+
+    toJSON(): McImageJSON {
+        return { ...super.toJSON(), type: "image", src: this.image.src, width: this.width, height: this.height };
     }
 
     getLocalBounds(): Rect {

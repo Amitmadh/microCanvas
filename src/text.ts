@@ -24,6 +24,10 @@ export interface McTextOptions extends McNodeOptions {
     direction?: "ltr" | "rtl";
 }
 
+export interface McTextJSON extends Required<McTextOptions> {
+    type: "text";
+}
+
 /**
  * A single line of text, aligned to the node's position by
  * align and baseline.
@@ -63,6 +67,22 @@ export class McText extends McNode {
         this.align = align;
         this.baseline = baseline;
         this.direction = direction;
+    }
+
+    toJSON(): McTextJSON {
+        return {
+            ...super.toJSON(),
+            type: "text",
+            text: this.text,
+            fontSize: this.fontSize,
+            fontFamily: this.fontFamily,
+            fontWeight: this.fontWeight,
+            fontStyle: this.fontStyle,
+            fill: this.fill,
+            align: this.align,
+            baseline: this.baseline,
+            direction: this.direction,
+        };
     }
 
     /**

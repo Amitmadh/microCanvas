@@ -29,6 +29,10 @@ export abstract class Shape extends McNode {
         this.strokeWidth = strokeWidth;
     }
 
+    toJSON(): Required<ShapeOptions> {
+        return { ...super.toJSON(), fill: this.fill, stroke: this.stroke, strokeWidth: this.strokeWidth };
+    }
+
     protected draw(context: CanvasRenderingContext2D): void {
         context.beginPath();
         this.tracePath(context);

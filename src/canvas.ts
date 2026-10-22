@@ -1,3 +1,4 @@
+import { Circle, type CircleJSON } from "./circle.js";
 import {
     MAX_WHEEL_ZOOM_STEP,
     MAX_ZOOM,
@@ -10,8 +11,11 @@ import {
     SELECTION_LINE_WIDTH,
     WHEEL_ZOOM_SPEED,
 } from "./config.js";
+import { McImage, type McImageJSON } from "./image.js";
 import type { McNode } from "./node.js";
+import { Rectangle, type RectangleJSON } from "./rectangle.js";
 import { Shape } from "./shape.js";
+import { McText, type McTextJSON } from "./text.js";
 import type { Paint, Point, Rect } from "./types.js";
 import { clamp, distance, midpoint, rectCorners, rectsOverlap } from "./util.js";
 
@@ -19,6 +23,13 @@ export interface CanvasOptions {
     width?: number;
     height?: number;
     background?: Paint | null;
+}
+
+export type McNodeJSON = RectangleJSON | CircleJSON | McTextJSON | McImageJSON;
+
+export interface CanvasJSON {
+    background: Paint | null;
+    nodes: McNodeJSON[];
 }
 
 interface Gesture {
@@ -160,6 +171,24 @@ export class Canvas {
             node.layer = top;
         }
         return this;
+    }
+
+    /** The background and nodes, without the view or selection. */
+    toJSON(): CanvasJSON {
+        return {
+            background: this.background,
+            nodes: this._sortedNodes().map((node) => node.toJSON() as McNodeJSON),
+        };
+    }
+
+    /**
+     * Replaces the background and every node with saved ones.
+     * @param json What toJSON() returned.
+     */
+    fromJSON({ background, nodes }: CanvasJSON): void {
+        this.remove(...this._nodes);
+        this.background = background;
+        this.add(...nodes.map(nodeFromJSON));
     }
 
     render(): void {
@@ -607,5 +636,22 @@ export class Canvas {
 
         // Resizing also clears the canvas.
         this.render();
+    }
+}
+
+function nodeFromJSON(json: McNodeJSON): McNode {
+    switch (json.type) {
+        case "rectangle":
+            return new Rectangle(json);
+        case "circle":
+            return new Circle(json);
+        case "text":
+            return new McText(json);
+        case "image": {
+            const { src, ...options } = json;
+            const image = document.createElement("img");
+            image.src = src;
+            return new McImage({ ...options, image });
+        }
     }
 }

@@ -85,6 +85,23 @@ export abstract class McNode {
         }
     }
 
+    toJSON(): Required<McNodeOptions> {
+        return {
+            id: this.id,
+            x: this.x,
+            y: this.y,
+            rotation: this.rotation,
+            scaleX: this.scaleX,
+            scaleY: this.scaleY,
+            opacity: this.opacity,
+            visible: this.visible,
+            layer: this.layer,
+            selectable: this.selectable,
+            draggable: this.draggable,
+            resizable: this.resizable,
+        };
+    }
+
     render(context: CanvasRenderingContext2D): void {
         if (!this.visible || this.opacity <= 0) {
             return;

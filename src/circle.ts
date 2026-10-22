@@ -5,6 +5,10 @@ export interface CircleOptions extends ShapeOptions {
     radius: number;
 }
 
+export interface CircleJSON extends Required<CircleOptions> {
+    type: "circle";
+}
+
 /**
  * A circle centred on the node's position.
  */
@@ -14,6 +18,10 @@ export class Circle extends Shape {
     constructor({ radius, ...options }: CircleOptions) {
         super(options);
         this.radius = radius;
+    }
+
+    toJSON(): CircleJSON {
+        return { ...super.toJSON(), type: "circle", radius: this.radius };
     }
 
     getLocalBounds(): Rect {
