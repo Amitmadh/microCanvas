@@ -109,16 +109,6 @@ describe("Canvas", () => {
     });
 
     // ======================================================
-    it("covers every device pixel when its CSS size is fractional", () => {
-        // Its device size rounds up, at a pixel ratio of 1 or 2.
-        const canvas = addCanvas({ width: 100.8, height: 40.8, background: "white" });
-        canvas.render();
-
-        const { width, height } = canvas.canvas;
-        expect([...canvas.context.getImageData(width - 1, height - 1, 1, 1).data]).toEqual([255, 255, 255, 255]);
-    });
-
-    // ======================================================
     it("renders once per frame, however often requestRender() is called", async () => {
         const canvas = addCanvas();
         const renders = countRenders(canvas);

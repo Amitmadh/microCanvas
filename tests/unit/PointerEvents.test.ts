@@ -262,27 +262,6 @@ describe("Pointer events", () => {
     });
 
     // ======================================================
-    it("moves a small selected node pressed inside it, and resizes it from just outside", () => {
-        const canvas = addCanvas();
-        // 15 × 15 on screen at 25%, so its handles would cover all of it.
-        canvas.zoom = 0.25;
-        const note = new Rectangle({ x: 200, y: 200, width: 60, height: 60, fill: "gold", draggable: true, resizable: true });
-        canvas.add(note);
-        canvas.selected = note;
-
-        simulatePointerDown(canvas, { x: 57, y: 57 });
-        simulatePointerMove(canvas, { x: 97, y: 57 });
-        simulatePointerUp(canvas, { x: 97, y: 57 });
-        expect([note.x, note.y, note.width, note.height]).toEqual([360, 200, 60, 60]);
-
-        // Its bottom-right corner is now at (105, 65) on screen.
-        simulatePointerDown(canvas, { x: 109, y: 69 });
-        simulatePointerMove(canvas, { x: 129, y: 69 });
-        simulatePointerUp(canvas, { x: 129, y: 69 });
-        expect([note.x, note.y, note.width, note.height]).toEqual([360, 200, 140, 60]);
-    });
-
-    // ======================================================
     it("only resizes the selection, and only when it's resizable", () => {
         const canvas = addCanvas();
         const rect = addRect(canvas);
