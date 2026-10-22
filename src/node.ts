@@ -12,6 +12,7 @@ export interface McNodeOptions {
     layer?: number;
     selectable?: boolean;
     draggable?: boolean;
+    resizable?: boolean;
 }
 
 /**
@@ -35,6 +36,7 @@ export abstract class McNode {
     private _layer: number;
     private _selectable: boolean;
     private _draggable: boolean;
+    private _resizable: boolean;
 
     constructor({
         x = 0,
@@ -47,6 +49,7 @@ export abstract class McNode {
         layer = 0,
         selectable = false,
         draggable = false,
+        resizable = false,
     }: McNodeOptions = {}) {
         this.x = x;
         this.y = y;
@@ -57,8 +60,9 @@ export abstract class McNode {
         this.visible = visible;
         this._layer = layer;
         this._draggable = draggable;
-        // A draggable node is always selectable.
-        this._selectable = selectable || draggable;
+        this._resizable = resizable;
+        // A draggable or resizable node is always selectable.
+        this._selectable = selectable || draggable || resizable;
     }
 
     /**
@@ -77,7 +81,7 @@ export abstract class McNode {
         }
     }
 
-    /** Turning this off also turns off draggable. */
+    /** Turning this off also turns off draggable and resizable. */
     get selectable(): boolean {
         return this._selectable;
     }
@@ -86,6 +90,7 @@ export abstract class McNode {
         this._selectable = selectable;
         if (!selectable) {
             this._draggable = false;
+            this._resizable = false;
         }
     }
 
@@ -97,6 +102,21 @@ export abstract class McNode {
     set draggable(draggable: boolean) {
         this._draggable = draggable;
         if (draggable) {
+            this._selectable = true;
+        }
+    }
+
+    /**
+     * Resized by the corners of the selection. Turning this on also turns on
+     * selectable.
+     */
+    get resizable(): boolean {
+        return this._resizable;
+    }
+
+    set resizable(resizable: boolean) {
+        this._resizable = resizable;
+        if (resizable) {
             this._selectable = true;
         }
     }
@@ -122,6 +142,16 @@ export abstract class McNode {
      * @returns The box in the node's own space.
      */
     abstract getLocalBounds(): Rect;
+
+    /**
+     * @method resize
+     * @description Resizes the node so the anchor stays in place on the board
+     * and the opposite corner of its bounds goes to the corner point. Nodes
+     * that keep their proportions follow the larger side.
+     * @param anchor A corner of the local bounds, in the node's own space.
+     * @param corner Where the opposite corner goes, in the node's own space.
+     */
+    abstract resize(anchor: Point, corner: Point): void;
 
     localToBoard({ x, y }: Point): Point {
         const cos = Math.cos(this.rotation);

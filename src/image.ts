@@ -40,6 +40,14 @@ export class McImage extends McNode {
         return { x: 0, y: 0, width: this.width, height: this.height };
     }
 
+    resize(anchor: Point, corner: Point): void {
+        const topLeft = this.localToBoard({ x: Math.min(anchor.x, corner.x), y: Math.min(anchor.y, corner.y) });
+        this.x = topLeft.x;
+        this.y = topLeft.y;
+        this.width = Math.abs(corner.x - anchor.x);
+        this.height = Math.abs(corner.y - anchor.y);
+    }
+
     protected draw(context: CanvasRenderingContext2D): void {
         if (!this._isLoaded()) {
             return;

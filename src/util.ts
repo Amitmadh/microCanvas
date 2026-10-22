@@ -25,3 +25,13 @@ export function isInsideRect(x: number, y: number, rect: Rect, margin = 0): bool
     return x >= rect.x - margin && x <= rect.x + rect.width + margin
         && y >= rect.y - margin && y <= rect.y + rect.height + margin;
 }
+
+/** Clockwise from the top-left. */
+export function rectCorners({ x, y, width, height }: Rect): Point[] {
+    return [
+        { x, y },
+        { x: x + width, y },
+        { x: x + width, y: y + height },
+        { x, y: y + height },
+    ];
+}

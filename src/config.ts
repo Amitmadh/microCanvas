@@ -3,6 +3,11 @@
 export const SELECTION_COLOR = "blue";
 export const SELECTION_LINE_WIDTH = 2;
 
+// Resize handles are squares this wide.
+export const RESIZE_HANDLE_SIZE = 8;
+export const RESIZE_HANDLE_FILL = "white";
+export const RESIZE_HANDLE_LINE_WIDTH = 1;
+
 export const DEFAULT_FILL = "black";
 export const DEFAULT_STROKE_WIDTH = 1;
 

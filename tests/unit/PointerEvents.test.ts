@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Rectangle, type Canvas } from "../../src/index.js";
+import { Circle, McText, Rectangle, type Canvas } from "../../src/index.js";
 import { addCanvas, countRenders, nextFrame } from "./test-utils.js";
 
 interface PointerOptions {
@@ -147,5 +147,127 @@ describe("Pointer events", () => {
         simulatePointerMove(canvas, { x: 100, y: 100, pointerId: 1 });
 
         expect(canvas.panX - panX).toBeCloseTo(-100, 9);
+    });
+
+    // ======================================================
+    it("resizes the selection by a corner, keeping the opposite corner in place", () => {
+        const canvas = addCanvas();
+        const rect = addRect(canvas);
+        rect.resizable = true;
+        canvas.selected = rect;
+        let changes = 0;
+        canvas.onChange = () => changes++;
+
+        simulatePointerDown(canvas, { x: 200, y: 90 });
+        simulatePointerMove(canvas, { x: 250, y: 120 });
+        simulatePointerUp(canvas, { x: 250, y: 120 });
+        expect([rect.x, rect.y, rect.width, rect.height]).toEqual([100, 50, 150, 70]);
+        expect(changes).toBe(2);
+
+        simulatePointerDown(canvas, { x: 100, y: 50 });
+        simulatePointerMove(canvas, { x: 80, y: 40 });
+        simulatePointerUp(canvas, { x: 80, y: 40 });
+        expect([rect.x, rect.y, rect.width, rect.height]).toEqual([80, 40, 170, 80]);
+    });
+
+    // ======================================================
+    it("resizes a rotated, scaled and stroked node along its own sides", () => {
+        const canvas = addCanvas();
+        const rect = new Rectangle({
+            x: 200, y: 60, width: 80, height: 40, rotation: Math.PI / 6, scaleX: 1.5, scaleY: 0.8,
+            stroke: "black", strokeWidth: 10, resizable: true,
+        });
+        canvas.add(rect);
+        canvas.selected = rect;
+        const anchor = rect.localToBoard({ x: 0, y: 0 });
+        const corner = rect.localToBoard({ x: 80, y: 40 });
+        // The handle sits on the outline, half the stroke past the corner.
+        const handle = rect.localToBoard({ x: 85, y: 45 });
+
+        simulatePointerDown(canvas, handle);
+        simulatePointerMove(canvas, { x: handle.x + 30, y: handle.y + 20 });
+        simulatePointerUp(canvas, { x: handle.x + 30, y: handle.y + 20 });
+
+        const newAnchor = rect.localToBoard({ x: 0, y: 0 });
+        const newCorner = rect.localToBoard({ x: rect.width, y: rect.height });
+        expect(newAnchor.x).toBeCloseTo(anchor.x, 9);
+        expect(newAnchor.y).toBeCloseTo(anchor.y, 9);
+        expect(newCorner.x).toBeCloseTo(corner.x + 30, 9);
+        expect(newCorner.y).toBeCloseTo(corner.y + 20, 9);
+    });
+
+    // ======================================================
+    it("keeps a circle round, and resizes text by its font size", () => {
+        const canvas = addCanvas();
+        const circle = new Circle({ x: 300, y: 100, radius: 40, resizable: true });
+        const text = new McText({ text: "Note", x: 100, y: 120, fontSize: 20, resizable: true });
+        canvas.add(circle, text);
+
+        canvas.selected = circle;
+        simulatePointerDown(canvas, { x: 340, y: 140 });
+        simulatePointerMove(canvas, { x: 380, y: 150 });
+        simulatePointerUp(canvas, { x: 380, y: 150 });
+        expect([circle.x, circle.y, circle.radius]).toEqual([320, 120, 60]);
+
+        canvas.selected = text;
+        const bounds = text.getLocalBounds();
+        const anchor = text.localToBoard({ x: bounds.x, y: bounds.y });
+        const handle = text.localToBoard({ x: bounds.x + bounds.width, y: bounds.y + bounds.height });
+        simulatePointerDown(canvas, handle);
+        simulatePointerMove(canvas, { x: handle.x + bounds.width, y: handle.y });
+        simulatePointerUp(canvas, { x: handle.x + bounds.width, y: handle.y });
+
+        expect(text.fontSize).toBeCloseTo(40, 9);
+        // Font metrics are rounded, so text only grows about in proportion.
+        const after = text.getLocalBounds();
+        const newAnchor = text.localToBoard({ x: after.x, y: after.y });
+        expect(Math.abs(newAnchor.x - anchor.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(newAnchor.y - anchor.y)).toBeLessThanOrEqual(1);
+    });
+
+    // ======================================================
+    it("doesn't flip a node or shrink it below a handle", () => {
+        const canvas = addCanvas();
+        const rect = addRect(canvas);
+        rect.resizable = true;
+        canvas.selected = rect;
+
+        simulatePointerDown(canvas, { x: 200, y: 90 });
+        simulatePointerMove(canvas, { x: 20, y: 10 });
+        simulatePointerUp(canvas, { x: 20, y: 10 });
+
+        expect([rect.x, rect.y, rect.width, rect.height]).toEqual([100, 50, 8, 8]);
+    });
+
+    // ======================================================
+    it("only resizes the selection, and only when it's resizable", () => {
+        const canvas = addCanvas();
+        const rect = addRect(canvas);
+        rect.resizable = true;
+
+        // Not selected yet, so pressing its corner selects it and drags it.
+        simulatePointerDown(canvas, { x: 198, y: 88 });
+        simulatePointerMove(canvas, { x: 248, y: 118 });
+        simulatePointerUp(canvas, { x: 248, y: 118 });
+        expect(canvas.selected).toBe(rect);
+        expect([rect.x, rect.y, rect.width, rect.height]).toEqual([150, 80, 100, 40]);
+
+        rect.resizable = false;
+        simulatePointerDown(canvas, { x: 248, y: 118 });
+        simulatePointerMove(canvas, { x: 298, y: 148 });
+        simulatePointerUp(canvas, { x: 298, y: 148 });
+        expect([rect.x, rect.y, rect.width, rect.height]).toEqual([200, 110, 100, 40]);
+    });
+
+    // ======================================================
+    it("makes a resizable node selectable, and an unselectable one not resizable", () => {
+        const rect = new Rectangle({ width: 10, height: 10, resizable: true });
+        expect(rect.selectable).toBe(true);
+
+        rect.selectable = false;
+        expect(rect.resizable).toBe(false);
+
+        rect.resizable = true;
+        expect(rect.selectable).toBe(true);
     });
 });

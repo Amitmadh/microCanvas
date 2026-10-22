@@ -9,7 +9,7 @@ import {
 } from "./config.js";
 import { McNode, type McNodeOptions } from "./node.js";
 import { sharedContextInstance } from "./scratch.js";
-import type { Paint, Rect } from "./types.js";
+import type { Paint, Point, Rect } from "./types.js";
 
 export interface McTextOptions extends McNodeOptions {
     text: string;
@@ -99,6 +99,17 @@ export class McText extends McNode {
         // Until a web font loads, the text is measured in a fallback font.
         this._boundsKey = document.fonts.check(font, this.text) ? key : "";
         return bounds;
+    }
+
+    resize(anchor: Point, corner: Point): void {
+        const bounds = this.getLocalBounds();
+        const scaleY = Math.abs(corner.y - anchor.y) / bounds.height;
+        const scale = bounds.width > 0 ? Math.max(Math.abs(corner.x - anchor.x) / bounds.width, scaleY) : scaleY;
+        // Text grows from its position, so this keeps the anchor in place.
+        const position = this.localToBoard({ x: anchor.x * (1 - scale), y: anchor.y * (1 - scale) });
+        this.x = position.x;
+        this.y = position.y;
+        this.fontSize *= scale;
     }
 
     protected draw(context: CanvasRenderingContext2D): void {

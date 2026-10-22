@@ -31,6 +31,14 @@ export class Rectangle extends Shape {
         };
     }
 
+    resize(anchor: Point, corner: Point): void {
+        const topLeft = this.localToBoard({ x: Math.min(anchor.x, corner.x), y: Math.min(anchor.y, corner.y) });
+        this.x = topLeft.x;
+        this.y = topLeft.y;
+        this.width = Math.abs(corner.x - anchor.x);
+        this.height = Math.abs(corner.y - anchor.y);
+    }
+
     protected containsLocalPoint({ x, y }: Point): boolean {
         const bounds = this.getLocalBounds();
         if (this.fill && isInsideRect(x, y, bounds)) {

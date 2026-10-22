@@ -1,21 +1,24 @@
 <!doctype html>
 <!--
-    Interactive test for selecting and dragging. Run `npm run build` first,
-    then open this page through a local server (e.g. `npx serve .` and go to
-    /demos/select-drag.html). Browsers block module imports on file:// pages.
+    Interactive test for selecting, dragging and resizing. Run `npm run build`
+    first, then open this page through a local server (e.g. `npx serve .` and
+    go to /demos/select-drag.html). Browsers block module imports on file://
+    pages.
 
     Press the red, gold, green or purple node to select it and drag it
-    around. The light blue rectangle is selectable but not draggable, so it's
+    around, or drag a corner of the selection to resize it: the opposite
+    corner stays put, the circle stays round and the text's font grows.
+    The light blue rectangle is selectable but not draggable, so it's
     selected but stays put. The gray rectangle and the status line are
     neither, so pressing them clears the selection, or picks up a node
-    underneath. Your selection is deep pink, and the green circle has an
-    orange outline, as if another user had selected it.
+    underneath. Your selection is deep pink, and the green circle always has
+    an orange outline, drawn by drawOverlay.
 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Select and drag test</title>
+    <title>Select, drag and resize test</title>
     <style>
         html, body {
             height: 100%;
@@ -31,16 +34,16 @@
         import { Canvas, Circle, McText, Rectangle } from "../dist/index.js";
 
         const canvas = new Canvas(document.querySelector("canvas"));
-        const circle = new Circle({ x: 520, y: 125, radius: 45, fill: "mediumseagreen", draggable: true });
+        const circle = new Circle({ x: 520, y: 125, radius: 45, fill: "mediumseagreen", draggable: true, resizable: true });
 
         const names = new Map([
-            [new Rectangle({ x: 40, y: 80, width: 120, height: 80, fill: "tomato", draggable: true }), "rectangle"],
+            [new Rectangle({ x: 40, y: 80, width: 120, height: 80, fill: "tomato", draggable: true, resizable: true }), "rectangle"],
             [new Rectangle({
-                x: 260, y: 80, width: 80, height: 50, fill: "gold", draggable: true,
+                x: 260, y: 80, width: 80, height: 50, fill: "gold", draggable: true, resizable: true,
                 rotation: Math.PI / 6, scaleX: 1.5, scaleY: 1.5,
             }), "rotated, scaled rectangle"],
             [circle, "circle"],
-            [new McText({ text: "Drag me", x: 40, y: 240, fontSize: 32, fill: "slateblue", draggable: true }), "text"],
+            [new McText({ text: "Drag me", x: 40, y: 240, fontSize: 32, fill: "slateblue", draggable: true, resizable: true }), "text"],
             [new Rectangle({ x: 520, y: 240, width: 120, height: 60, fill: "lightskyblue", selectable: true }), "locked rectangle"],
         ]);
 
@@ -56,7 +59,8 @@
             canvas.render();
         };
         canvas.onChange = (node) => {
-            status.text = `Moved: ${names.get(node)} to ${Math.round(node.x)}, ${Math.round(node.y)}`;
+            const { width, height } = node.getLocalBounds();
+            status.text = `Changed: ${names.get(node)} at ${Math.round(node.x)}, ${Math.round(node.y)}, ${Math.round(width)} × ${Math.round(height)}`;
             canvas.render();
         };
 

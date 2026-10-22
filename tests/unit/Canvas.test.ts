@@ -132,6 +132,27 @@ describe("Canvas", () => {
     });
 
     // ======================================================
+    it("draws resize handles on any outline of a resizable node", () => {
+        const canvas = addCanvas();
+        const rect = new Rectangle({ x: 100, y: 50, width: 100, height: 40, fill: "gold", resizable: true });
+        canvas.add(rect);
+        canvas.selected = rect;
+
+        // The top-left handle reaches 4 px past the corner, outside the outline.
+        canvas.render();
+        expect(getPixel(canvas, 98, 48)).toEqual([255, 255, 255, 255]);
+
+        canvas.selected = null;
+        canvas.drawOverlay = () => canvas.drawOutline(rect, "orange");
+        canvas.render();
+        expect(getPixel(canvas, 98, 48)).toEqual([255, 255, 255, 255]);
+
+        rect.resizable = false;
+        canvas.render();
+        expect(getPixel(canvas, 98, 48)).toEqual([0, 0, 0, 0]);
+    });
+
+    // ======================================================
     it("skips nodes out of view", () => {
         const canvas = addCanvas();
         const inView = new Rectangle({ x: 10, y: 10, width: 50, height: 50 });

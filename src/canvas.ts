@@ -3,6 +3,9 @@ import {
     MAX_ZOOM,
     MIN_MOVEMENT_PX,
     MIN_ZOOM,
+    RESIZE_HANDLE_FILL,
+    RESIZE_HANDLE_LINE_WIDTH,
+    RESIZE_HANDLE_SIZE,
     SELECTION_COLOR,
     SELECTION_LINE_WIDTH,
     WHEEL_ZOOM_SPEED,
@@ -10,7 +13,7 @@ import {
 import type { McNode } from "./node.js";
 import { Shape } from "./shape.js";
 import type { Paint, Point, Rect } from "./types.js";
-import { clamp, distance, manhattanDistance, midpoint, rectsOverlap } from "./util.js";
+import { clamp, distance, manhattanDistance, midpoint, rectCorners, rectsOverlap } from "./util.js";
 
 export interface CanvasOptions {
     width?: number;
@@ -29,8 +32,9 @@ interface Gesture {
  * height, it fills its parent element and follows its size. Nodes are
  * positioned in board coordinates, which zoom and panX/panY map to screen
  * coordinates: CSS pixels from the canvas's top-left. The user selects nodes
- * by pressing them, drags draggable ones, pans by dragging elsewhere or
- * scrolling, and zooms with a pinch or Ctrl+wheel.
+ * by pressing them, drags draggable ones, resizes resizable ones by the
+ * corners of the selection, pans by dragging elsewhere or scrolling, and
+ * zooms with a pinch or Ctrl+wheel.
  * @param canvas The canvas element.
  * @param options Width and height in CSS pixels, and the background.
  */
@@ -46,11 +50,11 @@ export class Canvas {
     selectionColor: Paint = SELECTION_COLOR;
     /**
      * Called after each render with the context in screen coordinates, to
-     * draw other users' selections, cursors and the like.
+     * draw more outlines, cursors and the like on top.
      */
     drawOverlay: ((context: CanvasRenderingContext2D) => void) | null = null;
     onSelect: ((node: McNode | null) => void) | null = null;
-    /** Called after the user moves a node. */
+    /** Called after the user moves or resizes a node. */
     onChange: ((node: McNode) => void) | null = null;
 
     private readonly _nodes = new Set<McNode>();
@@ -68,7 +72,7 @@ export class Canvas {
     private _pixelRatio = 0;
     // Screen positions of the pressed pointers, by pointer ID.
     private readonly _pointers = new Map<number, Point>();
-    // Moving a node, panning or pinching.
+    // Moving or resizing a node, panning or pinching.
     private _gesture: Gesture | null = null;
     private _pendingFrame = 0;
 
@@ -206,8 +210,9 @@ export class Canvas {
 
     /**
      * @method drawOutline
-     * @description Outlines a node as the selection is outlined, for use in
-     * drawOverlay. Hidden nodes get no outline.
+     * @description Outlines a node as the selection is outlined, with resize
+     * handles if it's resizable, for use in drawOverlay. Hidden nodes get no
+     * outline.
      * @param node The node to outline.
      * @param color The outline's colour.
      */
@@ -216,15 +221,26 @@ export class Canvas {
             return;
         }
 
+        const corners = this._outlineCorners(node);
         this.context.save();
         this.context.beginPath();
-        for (const corner of this._outlineCorners(node)) {
+        for (const corner of corners) {
             this.context.lineTo(corner.x, corner.y);
         }
         this.context.closePath();
         this.context.strokeStyle = color;
         this.context.lineWidth = SELECTION_LINE_WIDTH;
         this.context.stroke();
+
+        if (node.resizable) {
+            const half = RESIZE_HANDLE_SIZE / 2;
+            this.context.fillStyle = RESIZE_HANDLE_FILL;
+            this.context.lineWidth = RESIZE_HANDLE_LINE_WIDTH;
+            for (const { x, y } of corners) {
+                this.context.fillRect(x - half, y - half, RESIZE_HANDLE_SIZE, RESIZE_HANDLE_SIZE);
+                this.context.strokeRect(x - half, y - half, RESIZE_HANDLE_SIZE, RESIZE_HANDLE_SIZE);
+            }
+        }
         this.context.restore();
     }
 
@@ -324,13 +340,12 @@ export class Canvas {
     }
 
     private _outlineCorners(node: McNode): Point[] {
-        const { x, y, width, height } = this._strokedBounds(node);
-        return [
-            { x, y },
-            { x: x + width, y },
-            { x: x + width, y: y + height },
-            { x, y: y + height },
-        ].map((corner) => this.boardToScreen(node.localToBoard(corner)));
+        return rectCorners(this._strokedBounds(node)).map((corner) => this.boardToScreen(node.localToBoard(corner)));
+    }
+
+    private _resizableSelection(): McNode | null {
+        const node = this.selected;
+        return node?.resizable && node.visible && node.opacity > 0 ? node : null;
     }
 
     private _strokedBounds(node: McNode): Rect {
@@ -434,6 +449,16 @@ export class Canvas {
 
     private _press(): Gesture {
         const [screenPoint] = this._pointers.values();
+        const resizable = this._resizableSelection();
+        if (resizable) {
+            const handle = this._outlineCorners(resizable).findIndex((corner) =>
+                Math.abs(corner.x - screenPoint.x) <= RESIZE_HANDLE_SIZE
+                && Math.abs(corner.y - screenPoint.y) <= RESIZE_HANDLE_SIZE);
+            if (handle >= 0) {
+                return this._resizeNode(resizable, handle);
+            }
+        }
+
         const point = this.screenToBoard(screenPoint);
         const pressed = this.nodeAt(point, (node) => node.selectable);
         if (pressed !== this.selected) {
@@ -462,6 +487,42 @@ export class Canvas {
             },
             end: () => {
                 if (moved && node === this.selected) {
+                    this.onChange?.(node);
+                }
+            },
+        };
+    }
+
+    private _resizeNode(node: McNode, handle: number): Gesture {
+        const [start] = this._pointers.values();
+        const corners = rectCorners(node.getLocalBounds());
+        // Opposite corner from handle.
+        const anchor = node.localToBoard(corners[(handle + 2) % 4]);
+
+        const pressed = node.boardToLocal(this.screenToBoard(start));
+        const offsetX = corners[handle].x - pressed.x;
+        const offsetY = corners[handle].y - pressed.y;
+
+        const directionX = handle === 1 || handle === 2 ? 1 : -1;
+        const directionY = handle >= 2 ? 1 : -1;
+        let resized = false;
+        return {
+            update: () => {
+                const [screenPoint] = this._pointers.values();
+                if (!resized && manhattanDistance(start, screenPoint) < MIN_MOVEMENT_PX) {
+                    return;
+                }
+                resized = true;
+                const from = node.boardToLocal(anchor);
+                const to = node.boardToLocal(this.screenToBoard(screenPoint));
+                // It can't be flipped, or made smaller than a handle on screen.
+                const width = Math.max((to.x + offsetX - from.x) * directionX, RESIZE_HANDLE_SIZE / Math.abs(this.zoom * node.scaleX));
+                const height = Math.max((to.y + offsetY - from.y) * directionY, RESIZE_HANDLE_SIZE / Math.abs(this.zoom * node.scaleY));
+                node.resize(from, { x: from.x + directionX * width, y: from.y + directionY * height });
+                this.onChange?.(node);
+            },
+            end: () => {
+                if (resized && node === this.selected) {
                     this.onChange?.(node);
                 }
             },

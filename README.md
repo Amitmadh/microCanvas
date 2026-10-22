@@ -17,7 +17,7 @@ import { Canvas, Circle, McImage, McText, Rectangle } from "microcanvas";
 const canvas = new Canvas(document.querySelector("canvas")!);
 
 canvas.add(
-    new Rectangle({ x: 40, y: 40, width: 120, height: 80, fill: "gold", draggable: true }),
+    new Rectangle({ x: 40, y: 40, width: 120, height: 80, fill: "gold", draggable: true, resizable: true }),
     new Circle({ x: 260, y: 80, radius: 40, fill: null, stroke: "navy", strokeWidth: 4 }),
     new McText({ text: "Hello", x: 40, y: 170, fontSize: 24, draggable: true }),
     await McImage.load("photo.jpg", { x: 340, y: 40, width: 160, height: 100 }),
@@ -27,10 +27,10 @@ canvas.onChange = (node) => console.log("moved to", node.x, node.y);
 canvas.render();
 ```
 
-- Users press to select, drag `draggable` nodes, drag empty space or scroll to pan, and pinch or Ctrl+wheel to zoom.
+- Users press to select, drag `draggable` nodes, drag the corners of a selected `resizable` node to resize it, drag empty space or scroll to pan, and pinch or Ctrl+wheel to zoom.
 - After changing anything in code, call `render()`, or `requestRender()` to draw once on the next frame.
-- Every node has `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity`, `visible`, `layer`, `selectable` and `draggable`.
-- `drawOverlay` and `drawOutline(node, color)` draw other users' selections on top.
+- Every node has `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity`, `visible`, `layer`, `selectable`, `draggable` and `resizable`.
+- `drawOverlay` draws on top of each render, such as more outlines with `drawOutline(node, color)`.
 
 ## Install
 

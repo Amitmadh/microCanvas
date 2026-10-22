@@ -22,6 +22,18 @@ export class Circle extends Shape {
         return { x: -radius, y: -radius, width: radius * 2, height: radius * 2 };
     }
 
+    resize(anchor: Point, corner: Point): void {
+        // A circle stays round, as wide as the larger side.
+        const radius = Math.max(Math.abs(corner.x - anchor.x), Math.abs(corner.y - anchor.y)) / 2;
+        const center = this.localToBoard({
+            x: anchor.x + Math.sign(corner.x - anchor.x) * radius,
+            y: anchor.y + Math.sign(corner.y - anchor.y) * radius,
+        });
+        this.x = center.x;
+        this.y = center.y;
+        this.radius = radius;
+    }
+
     protected containsLocalPoint({ x, y }: Point): boolean {
         const radius = Math.max(this.radius, 0);
         const distance = Math.hypot(x, y);
