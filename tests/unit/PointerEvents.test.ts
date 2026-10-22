@@ -155,14 +155,16 @@ describe("Pointer events", () => {
         const rect = addRect(canvas);
         rect.resizable = true;
         canvas.selected = rect;
+        let changing = 0;
         let changes = 0;
+        canvas.whileChange = () => changing++;
         canvas.onChange = () => changes++;
 
         simulatePointerDown(canvas, { x: 200, y: 90 });
         simulatePointerMove(canvas, { x: 250, y: 120 });
         simulatePointerUp(canvas, { x: 250, y: 120 });
         expect([rect.x, rect.y, rect.width, rect.height]).toEqual([100, 50, 150, 70]);
-        expect(changes).toBe(2);
+        expect([changing, changes]).toEqual([1, 1]);
 
         simulatePointerDown(canvas, { x: 100, y: 50 });
         simulatePointerMove(canvas, { x: 80, y: 40 });

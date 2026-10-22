@@ -54,8 +54,10 @@ export class Canvas {
      */
     drawOverlay: ((context: CanvasRenderingContext2D) => void) | null = null;
     onSelect: ((node: McNode | null) => void) | null = null;
-    /** Called after the user moves or resizes a node. */
+    /** Called once the user finishes moving or resizing a node. */
     onChange: ((node: McNode) => void) | null = null;
+    /** Called while the user moves or resizes a node. */
+    whileChange: ((node: McNode) => void) | null = null;
 
     private readonly _nodes = new Set<McNode>();
     // The nodes in draw order.
@@ -139,6 +141,7 @@ export class Canvas {
                 this._nodes.delete(node);
                 if (node === this.selected) {
                     this.selected = null;
+                    this.onSelect?.(null);
                 }
             }
         }
@@ -475,6 +478,9 @@ export class Canvas {
         let moved = false;
         return {
             update: () => {
+                if (node !== this.selected) {
+                    return;
+                }
                 const [screenPoint] = this._pointers.values();
                 if (!moved && manhattanDistance(start, screenPoint) < MIN_MOVEMENT_PX) {
                     return;
@@ -483,7 +489,7 @@ export class Canvas {
                 const to = this.screenToBoard(screenPoint);
                 node.x = to.x + offsetX;
                 node.y = to.y + offsetY;
-                this.onChange?.(node);
+                this.whileChange?.(node);
             },
             end: () => {
                 if (moved && node === this.selected) {
@@ -508,6 +514,9 @@ export class Canvas {
         let resized = false;
         return {
             update: () => {
+                if (node !== this.selected) {
+                    return;
+                }
                 const [screenPoint] = this._pointers.values();
                 if (!resized && manhattanDistance(start, screenPoint) < MIN_MOVEMENT_PX) {
                     return;
@@ -519,7 +528,7 @@ export class Canvas {
                 const width = Math.max((to.x + offsetX - from.x) * directionX, RESIZE_HANDLE_SIZE / Math.abs(this.zoom * node.scaleX));
                 const height = Math.max((to.y + offsetY - from.y) * directionY, RESIZE_HANDLE_SIZE / Math.abs(this.zoom * node.scaleY));
                 node.resize(from, { x: from.x + directionX * width, y: from.y + directionY * height });
-                this.onChange?.(node);
+                this.whileChange?.(node);
             },
             end: () => {
                 if (resized && node === this.selected) {
