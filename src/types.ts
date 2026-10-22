@@ -1,4 +1,4 @@
-export type Paint = string | CanvasGradient | CanvasPattern;
+export type Paint = string;
 
 export interface Point {
     x: number;

@@ -25,10 +25,6 @@
 
         const canvas = new Canvas(document.querySelector("canvas"));
 
-        const gradient = canvas.context.createLinearGradient(0, 0, 120, 0);
-        gradient.addColorStop(0, "deepskyblue");
-        gradient.addColorStop(1, "mediumvioletred");
-
         const cases = [
             ["Fill", new Rectangle({ x: 40, y: 60, width: 120, height: 80, fill: "tomato" })],
             ["Fill + stroke", new Rectangle({
@@ -37,7 +33,6 @@
             ["Stroke only", new Rectangle({
                 x: 440, y: 60, width: 120, height: 80, fill: null, stroke: "royalblue", strokeWidth: 2,
             })],
-            ["Gradient fill", new Rectangle({ x: 640, y: 60, width: 120, height: 80, fill: gradient })],
             ["Rotated 30°", new Rectangle({
                 x: 60, y: 260, width: 120, height: 80, fill: "mediumseagreen", rotation: Math.PI / 6,
             })],

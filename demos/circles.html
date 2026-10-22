@@ -27,11 +27,6 @@
             background: "#f5f7fa",
         });
 
-        // Gradients are in the circle's own space, so (0, 0) is its centre.
-        const gradient = canvas.context.createRadialGradient(-15, -15, 5, 0, 0, 50);
-        gradient.addColorStop(0, "white");
-        gradient.addColorStop(1, "steelblue");
-
         const cases = [
             ["Fill", new Circle({ x: 100, y: 110, radius: 50, fill: "tomato" })],
             ["Fill + stroke", new Circle({
@@ -40,7 +35,6 @@
             ["Stroke only", new Circle({
                 x: 500, y: 110, radius: 50, fill: null, stroke: "royalblue", strokeWidth: 2,
             })],
-            ["Radial gradient", new Circle({ x: 700, y: 110, radius: 50, fill: gradient })],
             ["Scaled 1.6× wide", new Circle({
                 x: 100, y: 310, radius: 50, fill: "orange", stroke: "black", strokeWidth: 2, scaleX: 1.6,
             })],
