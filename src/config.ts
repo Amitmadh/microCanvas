@@ -17,6 +17,7 @@ export const DEFAULT_FONT_WEIGHT = "normal";
 export const DEFAULT_FONT_STYLE = "normal";
 export const DEFAULT_TEXT_ALIGN = "left";
 export const DEFAULT_TEXT_BASELINE = "alphabetic";
+export const DEFAULT_TEXT_DIRECTION = "ltr";
 
 export const MIN_ZOOM = 0.1;
 export const MAX_ZOOM = 10;

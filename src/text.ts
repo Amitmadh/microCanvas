@@ -6,6 +6,7 @@ import {
     DEFAULT_FONT_WEIGHT,
     DEFAULT_TEXT_ALIGN,
     DEFAULT_TEXT_BASELINE,
+    DEFAULT_TEXT_DIRECTION,
 } from "./config.js";
 import { McNode, type McNodeOptions } from "./node.js";
 import { sharedContextInstance } from "./scratch.js";
@@ -20,6 +21,7 @@ export interface McTextOptions extends McNodeOptions {
     fill?: Paint;
     align?: "left" | "center" | "right";
     baseline?: CanvasTextBaseline;
+    direction?: "ltr" | "rtl";
 }
 
 /**
@@ -36,6 +38,7 @@ export class McText extends McNode {
     fill: Paint;
     align: "left" | "center" | "right";
     baseline: CanvasTextBaseline;
+    direction: "ltr" | "rtl";
     private _boundsKey = "";
     private _bounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
@@ -48,6 +51,7 @@ export class McText extends McNode {
         fill = DEFAULT_FILL,
         align = DEFAULT_TEXT_ALIGN,
         baseline = DEFAULT_TEXT_BASELINE,
+        direction = DEFAULT_TEXT_DIRECTION,
         ...options
     }: McTextOptions) {
         super(options);
@@ -59,6 +63,7 @@ export class McText extends McNode {
         this.fill = fill;
         this.align = align;
         this.baseline = baseline;
+        this.direction = direction;
     }
 
     /**
@@ -69,7 +74,7 @@ export class McText extends McNode {
      */
     getLocalBounds(): Rect {
         const font = this._font();
-        const key = `${font}|${this.align}|${this.baseline}|${this.text}`;
+        const key = `${font}|${this.align}|${this.baseline}|${this.direction}|${this.text}`;
         if (key === this._boundsKey) {
             return this._bounds;
         }
@@ -78,6 +83,7 @@ export class McText extends McNode {
         context.font = font;
         context.textAlign = this.align;
         context.textBaseline = this.baseline;
+        context.direction = this.direction;
         const metrics = context.measureText(this.text);
 
         // With the align and baseline set, the metrics start at the position.
@@ -117,6 +123,7 @@ export class McText extends McNode {
         context.fillStyle = this.fill;
         context.textAlign = this.align;
         context.textBaseline = this.baseline;
+        context.direction = this.direction;
         context.fillText(this.text, 0, 0);
     }
 

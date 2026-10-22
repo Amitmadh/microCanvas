@@ -90,4 +90,21 @@ describe("McText", () => {
 
         expect(inkBox(canvas).right).not.toBe(fallbackInk.right);
     });
+
+    // ======================================================
+    it("draws in its own direction, whatever the page's", () => {
+        // The pixels of a Hebrew and English note, drawn on a page with the given direction.
+        const draw = (page: string, direction: "ltr" | "rtl") => {
+            const parent = addContainer();
+            parent.dir = page;
+            const canvas = addCanvas({ width: 300, height: 80 }, parent);
+            canvas.add(new McText({ text: "Hi שלום!", x: 20, y: 50, fontSize: 30, direction }));
+            canvas.render();
+            return canvas.context.getImageData(0, 0, canvas.canvas.width, canvas.canvas.height).data.join();
+        };
+
+        expect(draw("rtl", "ltr") === draw("ltr", "ltr")).toBe(true);
+        expect(draw("ltr", "rtl") === draw("rtl", "rtl")).toBe(true);
+        expect(draw("ltr", "rtl") === draw("ltr", "ltr")).toBe(false);
+    });
 });
