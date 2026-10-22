@@ -15,6 +15,10 @@ import type { Paint, Point, Rect } from "./types.js";
 export interface McTextOptions extends McNodeOptions {
     text: string;
     fontSize?: number;
+    /**
+     * CSS font-family. Quote names like '"Press Start 2P"' or they
+     * fall back to the default font.
+     */
     fontFamily?: string;
     fontWeight?: string | number;
     fontStyle?: "normal" | "italic";
@@ -98,6 +102,8 @@ export class McText extends McNode {
         }
 
         const context = sharedContextInstance();
+        // The context ignores a font CSS can't parse
+        context.font = `${DEFAULT_FONT_STYLE} ${DEFAULT_FONT_WEIGHT} ${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
         context.font = font;
         context.textAlign = this.align;
         context.textBaseline = this.baseline;
@@ -121,7 +127,7 @@ export class McText extends McNode {
 
         this._bounds = bounds;
         // Until a web font loads, the text is measured in a fallback font.
-        this._boundsKey = document.fonts.check(font, this.text) ? key : "";
+        this._boundsKey = this._fontLoaded(font, this.text) ? key : "";
         return bounds;
     }
 
@@ -137,6 +143,7 @@ export class McText extends McNode {
     }
 
     protected draw(context: CanvasRenderingContext2D): void {
+        context.font = `${DEFAULT_FONT_STYLE} ${DEFAULT_FONT_WEIGHT} ${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
         context.font = this._font();
         context.fillStyle = this.fill;
         context.textAlign = this.align;
@@ -148,4 +155,12 @@ export class McText extends McNode {
     private _font(): string {
         return `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
     }
+
+    private _fontLoaded(font: string, text: string): boolean {
+    try {
+        return document.fonts.check(font, text);
+    } catch {
+        return true;
+    }
+}
 }

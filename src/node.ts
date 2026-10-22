@@ -108,12 +108,15 @@ export abstract class McNode {
         }
 
         context.save();
-        context.translate(this.x, this.y);
-        context.rotate(this.rotation);
-        context.scale(this.scaleX, this.scaleY);
-        context.globalAlpha *= this.opacity;
-        this.draw(context);
-        context.restore();
+        try {
+            context.translate(this.x, this.y);
+            context.rotate(this.rotation);
+            context.scale(this.scaleX, this.scaleY);
+            context.globalAlpha *= this.opacity;
+            this.draw(context);
+        } finally {
+            context.restore();
+        }
     }
 
     /**

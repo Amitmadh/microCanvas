@@ -183,12 +183,14 @@ export class Canvas {
 
     /**
      * Replaces the background and every node with saved ones.
+     * Nodes of unknown type are skipped.
      * @param json What toJSON() returned.
      */
     fromJSON({ background, nodes }: CanvasJSON): void {
+        const loaded = nodes.map(nodeFromJSON).filter((node) => node !== null);
         this.remove(...this._nodes);
         this.background = background;
-        this.add(...nodes.map(nodeFromJSON));
+        this.add(...loaded);
     }
 
     render(): void {
@@ -214,8 +216,12 @@ export class Canvas {
         this.context.translate(this.panX, this.panY);
         this.context.scale(this.zoom, this.zoom);
         for (const node of this._sortedNodes()) {
-            if (rectsOverlap(this._boardRect(node), view)) {
-                node.render(this.context);
+            try {
+                if (rectsOverlap(this._boardRect(node), view)) {
+                    node.render(this.context);
+                }
+            } catch (error) {
+                reportError(error);
             }
         }
         this.context.restore();
@@ -235,8 +241,11 @@ export class Canvas {
 
         if (this.drawOverlay) {
             this.context.save();
-            this.drawOverlay(this.context);
-            this.context.restore();
+            try {
+                this.drawOverlay(this.context);
+            } finally {
+                this.context.restore();
+            }
         }
     }
 
@@ -639,7 +648,7 @@ export class Canvas {
     }
 }
 
-function nodeFromJSON(json: McNodeJSON): McNode {
+function nodeFromJSON(json: McNodeJSON): McNode | null {
     switch (json.type) {
         case "rectangle":
             return new Rectangle(json);
@@ -653,5 +662,7 @@ function nodeFromJSON(json: McNodeJSON): McNode {
             image.src = src;
             return new McImage({ ...options, image });
         }
+        default:
+            return null;
     }
 }

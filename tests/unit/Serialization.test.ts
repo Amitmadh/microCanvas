@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { Circle, McImage, McText, Rectangle, type Canvas, type McNode } from "../../src/index.js";
+import { Circle, McImage, McText, Rectangle, type Canvas, type CanvasJSON, type McNode } from "../../src/index.js";
 import { addCanvas } from "./test-utils.js";
 
 // A red 20 × 20 picture.
@@ -71,5 +71,35 @@ describe("Serialization", () => {
         expect(canvas.nodeAt({ x: 100, y: 100 })).toBeInstanceOf(Circle);
         expect(canvas.selected).toBeNull();
         expect(selections).toEqual([null]);
+    });
+
+    // ======================================================
+    it("skips node types it doesn't know, such as a later version's", () => {
+        const canvas = addCanvas();
+        canvas.add(new Rectangle({ id: "old", x: 0, y: 0, width: 50, height: 50 }));
+        const saved = {
+            background: null,
+            nodes: [
+                new Rectangle({ id: "rect", x: 10, y: 10, width: 20, height: 20 }).toJSON(),
+                { type: "line", id: "line", x: 0, y: 0 },
+                new Circle({ id: "circle", x: 100, y: 100, radius: 10 }).toJSON(),
+            ],
+        };
+
+        canvas.fromJSON(saved as unknown as CanvasJSON);
+
+        expect(canvas.toJSON().nodes.map((node) => node.id).sort()).toEqual(["circle", "rect"]);
+    });
+
+    // ======================================================
+    it("keeps its board when the saved one can't be read", () => {
+        const canvas = addCanvas();
+        const old = new Rectangle({ x: 10, y: 10, width: 50, height: 50 });
+        canvas.add(old);
+
+        expect(() => canvas.fromJSON({ background: "red", nodes: null } as unknown as CanvasJSON)).toThrow();
+
+        expect(canvas.background).toBeNull();
+        expect(canvas.nodeAt({ x: 30, y: 30 })).toBe(old);
     });
 });

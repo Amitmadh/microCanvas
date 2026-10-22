@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { Circle, McText, Rectangle, type Canvas } from "../../src/index.js";
 import { addCanvas, addContainer, countRenders, nextFrame, seededRandom } from "./test-utils.js";
 
@@ -6,6 +6,13 @@ import { addCanvas, addContainer, countRenders, nextFrame, seededRandom } from "
 function getPixel(canvas: Canvas, x: number, y: number): number[] {
     const ratio = canvas.pixelRatio;
     return [...canvas.context.getImageData(Math.floor(x * ratio), Math.floor(y * ratio), 1, 1).data];
+}
+
+// A node whose drawing fails, like a custom node with a bug.
+class FailingNode extends Rectangle {
+    protected draw(): void {
+        throw new Error("Failed to draw");
+    }
 }
 
 // A 600 × 300 flex container with a 100 px sidebar and a canvas filling the rest.
@@ -225,6 +232,47 @@ describe("Canvas", () => {
 
         expect(boardA.nodeAt({ x: 45, y: 30 })?.id).toBe("note-2");
         expect(boardB.nodeAt({ x: 45, y: 30 })?.id).toBe("note-2");
+    });
+
+    // ======================================================
+    it("draws the rest of the board when a node throws, and reports the error", () => {
+        const reported = vi.spyOn(window, "reportError").mockImplementation(() => {});
+        onTestFinished(() => reported.mockRestore());
+        const canvas = addCanvas({ width: 600, height: 200, background: "white" });
+        canvas.zoom = 2;
+        canvas.panX = 30;
+        // The failing node draws first. The rectangle covers x = 50 to 90 on screen.
+        canvas.add(
+            new FailingNode({ x: 100, y: 10, width: 20, height: 20, layer: -1 }),
+            new Rectangle({ x: 10, y: 10, width: 20, height: 20, fill: "rgb(255, 0, 0)" }),
+        );
+
+        canvas.render();
+
+        expect(getPixel(canvas, 70, 40)).toEqual([255, 0, 0, 255]);
+        expect(reported).toHaveBeenCalledOnce();
+        expect(reported).toHaveBeenCalledWith(new Error("Failed to draw"));
+    });
+
+    // ======================================================
+    it("draws in the right place after the overlay throws", () => {
+        const canvas = addCanvas({ width: 600, height: 200, background: "white" });
+        canvas.zoom = 2;
+        canvas.panX = 130;
+        // On screen it covers x = 150 to 190 at panX 130, and x = 50 to 90 at panX 30.
+        canvas.add(new Rectangle({ x: 10, y: 10, width: 20, height: 20, fill: "rgb(255, 0, 0)" }));
+        canvas.drawOverlay = (context) => {
+            context.translate(200, 0);
+            throw new Error("Failed to draw the overlay");
+        };
+        expect(() => canvas.render()).toThrow("Failed to draw the overlay");
+
+        // Panned, so pixels left over from the failed render would show.
+        canvas.drawOverlay = null;
+        canvas.panX = 30;
+        canvas.render();
+
+        expect([getPixel(canvas, 70, 40), getPixel(canvas, 170, 40)]).toEqual([[255, 0, 0, 255], [255, 255, 255, 255]]);
     });
 
     // ======================================================

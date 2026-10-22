@@ -92,6 +92,23 @@ describe("McText", () => {
     });
 
     // ======================================================
+    it("draws a font family CSS can't parse in the default font, without throwing", () => {
+        // Measuring another font first leaves it on the context used for measuring.
+        new McText({ text: "Hello", fontSize: 80, fontFamily: "serif" }).getLocalBounds();
+        // Unquoted, "2P" isn't a valid CSS name.
+        const text = new McText({ text: "Hello", x: 20, y: 100, fontFamily: "Press Start 2P" });
+        const canvas = addCanvas({ width: 400, height: 200 });
+        canvas.add(text);
+
+        expect(() => canvas.render()).not.toThrow();
+        const inDefaultFont = new McText({ text: "Hello" });
+        expect(text.getLocalBounds()).toEqual(inDefaultFont.getLocalBounds());
+        const ink = inkBox(canvas);
+        expect(ink.right).toBeGreaterThan(text.x);
+        expect(ink.right).toBeLessThanOrEqual(text.x + text.getLocalBounds().width + 1);
+    });
+
+    // ======================================================
     it("draws in its own direction, whatever the page's", () => {
         // The pixels of a Hebrew and English note, drawn on a page with the given direction.
         const draw = (page: string, direction: "ltr" | "rtl") => {
