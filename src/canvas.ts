@@ -147,6 +147,21 @@ export class Canvas {
         return this;
     }
 
+    /**
+     * Puts each node on a new layer above the topmost one.
+     * @param nodes The nodes to raise, lowest first.
+     * @returns The canvas, for chaining.
+     */
+    bringToFront(...nodes: McNode[]): this {
+        const sorted = this._sortedNodes();
+        let top = sorted.length > 0 ? sorted[sorted.length - 1].layer : 0;
+        for (const node of nodes) {
+            top += 1;
+            node.layer = top;
+        }
+        return this;
+    }
+
     render(): void {
         this.context.clearRect(0, 0, this._width, this._height);
 
@@ -328,7 +343,9 @@ export class Canvas {
 
     private _sortedNodes(): McNode[] {
         if (this._needsSort) {
-            this._sorted = [...this._nodes].sort((a, b) => a.layer - b.layer);
+            // Ties go by id, the same way on every board.
+            this._sorted = [...this._nodes].sort((a, b) =>
+                a.layer - b.layer || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
             this._needsSort = false;
         }
         return this._sorted;

@@ -195,6 +195,39 @@ describe("Canvas", () => {
     });
 
     // ======================================================
+    it("brings nodes to the front, each on a layer of its own", () => {
+        const canvas = addCanvas();
+        const [a, b, c] = [10, 20, 30].map((offset) => new Rectangle({ x: offset, y: offset, width: 50, height: 50 }));
+        canvas.add(a, b, c);
+
+        canvas.bringToFront(a);
+        expect(canvas.nodeAt({ x: 45, y: 45 })).toBe(a);
+
+        canvas.bringToFront(c, b);
+        expect(canvas.nodeAt({ x: 45, y: 45 })).toBe(b);
+        expect([a.layer, c.layer, b.layer]).toEqual([1, 2, 3]);
+    });
+
+    // ======================================================
+    it("stacks nodes alike on two boards that raise them at the same moment", () => {
+        const make = () => ["note-1", "note-2"].map((id, i) => new Rectangle({ id, x: 10 + 20 * i, y: 10, width: 50, height: 50 }));
+        const [a1, a2] = make();
+        const [b1, b2] = make();
+        // The boards added the same two nodes in opposite orders.
+        const boardA = addCanvas().add(a1, a2);
+        const boardB = addCanvas().add(b2, b1);
+
+        // Each raises a different node to the same layer, then receives the other's change.
+        boardA.bringToFront(a1);
+        boardB.bringToFront(b2);
+        a2.layer = b2.layer;
+        b1.layer = a1.layer;
+
+        expect(boardA.nodeAt({ x: 45, y: 30 })?.id).toBe("note-2");
+        expect(boardB.nodeAt({ x: 45, y: 30 })?.id).toBe("note-2");
+    });
+
+    // ======================================================
     it("draws what drawing every node draws, at any zoom and pan", () => {
         expect(compareWithEveryNodeDrawn()).toBe(0);
     });

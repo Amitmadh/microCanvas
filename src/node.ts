@@ -2,6 +2,7 @@ import type { Canvas } from "./canvas.js";
 import type { Point, Rect } from "./types.js";
 
 export interface McNodeOptions {
+    id?: string;
     x?: number;
     y?: number;
     rotation?: number;
@@ -19,6 +20,7 @@ export interface McNodeOptions {
  * The base of everything drawn on a canvas.
  */
 export abstract class McNode {
+    readonly id: string;
     x: number;
     y: number;
     /** In radians, around the node's position. */
@@ -39,6 +41,7 @@ export abstract class McNode {
     private _layer: number;
 
     constructor({
+        id = "",
         x = 0,
         y = 0,
         rotation = 0,
@@ -51,6 +54,7 @@ export abstract class McNode {
         draggable = false,
         resizable = false,
     }: McNodeOptions = {}) {
+        this.id = id;
         this.x = x;
         this.y = y;
         this.rotation = rotation;
@@ -65,7 +69,8 @@ export abstract class McNode {
     }
 
     /**
-     * Higher layers draw on top; within a layer, nodes draw in the order added.
+     * Higher layers draw on top; within a layer, nodes draw by id, then in the
+     * order added.
      */
     get layer(): number {
         return this._layer;
