@@ -28,15 +28,16 @@ export abstract class McNode {
     scaleY: number;
     opacity: number;
     visible: boolean;
+
+    selectable: boolean;
+    draggable: boolean;
+    resizable: boolean;
     /**
      * @internal
      * Kept up to date by Canvas.
      */
     _canvas: Canvas | null = null;
     private _layer: number;
-    private _selectable: boolean;
-    private _draggable: boolean;
-    private _resizable: boolean;
 
     constructor({
         x = 0,
@@ -59,10 +60,9 @@ export abstract class McNode {
         this.opacity = opacity;
         this.visible = visible;
         this._layer = layer;
-        this._draggable = draggable;
-        this._resizable = resizable;
-        // A draggable or resizable node is always selectable.
-        this._selectable = selectable || draggable || resizable;
+        this.selectable = selectable;
+        this.draggable = draggable;
+        this.resizable = resizable;
     }
 
     /**
@@ -78,46 +78,6 @@ export abstract class McNode {
             if (this._canvas) {
                 this._canvas._needsSort = true;
             }
-        }
-    }
-
-    /** Turning this off also turns off draggable and resizable. */
-    get selectable(): boolean {
-        return this._selectable;
-    }
-
-    set selectable(selectable: boolean) {
-        this._selectable = selectable;
-        if (!selectable) {
-            this._draggable = false;
-            this._resizable = false;
-        }
-    }
-
-    /** Turning this on also turns on selectable. */
-    get draggable(): boolean {
-        return this._draggable;
-    }
-
-    set draggable(draggable: boolean) {
-        this._draggable = draggable;
-        if (draggable) {
-            this._selectable = true;
-        }
-    }
-
-    /**
-     * Resized by the corners of the selection. Turning this on also turns on
-     * selectable.
-     */
-    get resizable(): boolean {
-        return this._resizable;
-    }
-
-    set resizable(resizable: boolean) {
-        this._resizable = resizable;
-        if (resizable) {
-            this._selectable = true;
         }
     }
 

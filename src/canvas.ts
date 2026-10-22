@@ -463,7 +463,7 @@ export class Canvas {
         }
 
         const point = this.screenToBoard(screenPoint);
-        const pressed = this.nodeAt(point, (node) => node.selectable);
+        const pressed = this.nodeAt(point, (node) => node.selectable || node.draggable || node.resizable);
         if (pressed !== this.selected) {
             this.selected = pressed;
             this.onSelect?.(pressed);
