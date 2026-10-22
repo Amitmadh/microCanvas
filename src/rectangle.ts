@@ -8,8 +8,7 @@ export interface RectangleOptions extends ShapeOptions {
 }
 
 /**
- * @class Rectangle
- * @description A rectangle with its top-left corner at the node's position.
+ * A rectangle with its top-left corner at the node's position.
  */
 export class Rectangle extends Shape {
     width: number;

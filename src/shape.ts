@@ -10,8 +10,7 @@ export interface ShapeOptions extends McNodeOptions {
 }
 
 /**
- * @class Shape
- * @description A node drawn from a path, with an optional fill and stroke.
+ * A node drawn from a path, with an optional fill and stroke.
  */
 export abstract class Shape extends McNode {
     fill: Paint | null;
@@ -48,8 +47,7 @@ export abstract class Shape extends McNode {
     }
 
     /**
-     * @method containsLocalPoint
-     * @description Only the fill and stroke are hit.
+     * Only the fill and stroke are hit.
      * @param point The point in the shape's own space.
      * @returns Whether the point is hit.
      */
@@ -71,8 +69,7 @@ export abstract class Shape extends McNode {
     }
 
     /**
-     * @method tracePath
-     * @description Adds the shape's outline to the current path, in its own
+     * Adds the shape's outline to the current path, in its own
      * space. Shape fills and strokes it.
      * @param context The context whose path to add to.
      */

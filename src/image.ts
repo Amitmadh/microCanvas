@@ -10,8 +10,7 @@ export interface McImageOptions extends McNodeOptions {
 }
 
 /**
- * @class McImage
- * @description A picture with its top-left corner at the node's position.
+ * A picture with its top-left corner at the node's position.
  */
 export class McImage extends McNode {
     image: HTMLImageElement;
@@ -60,8 +59,7 @@ export class McImage extends McNode {
     }
 
     /**
-     * @method containsLocalPoint
-     * @description Hits anywhere in the box, transparent pixels included,
+     * Hits anywhere in the box, transparent pixels included,
      * once the image has loaded.
      * @param point The point in the image's own space.
      * @returns Whether the point is hit.

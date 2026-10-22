@@ -1,8 +1,7 @@
 let sharedContext: CanvasRenderingContext2D | null = null;
 
 /**
- * @function sharedContextInstance
- * @description A hidden 2D context shared for measuring text and testing
+ * A hidden 2D context shared for measuring text and testing
  * points against paths. Its transform is always the identity.
  * @returns The shared context, created on first use.
  */

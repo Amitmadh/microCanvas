@@ -6,8 +6,7 @@ export interface CircleOptions extends ShapeOptions {
 }
 
 /**
- * @class Circle
- * @description A circle centred on the node's position.
+ * A circle centred on the node's position.
  */
 export class Circle extends Shape {
     radius: number;

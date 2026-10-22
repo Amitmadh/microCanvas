@@ -16,8 +16,7 @@ export interface McNodeOptions {
 }
 
 /**
- * @class McNode
- * @description The base of everything drawn on a canvas.
+ * The base of everything drawn on a canvas.
  */
 export abstract class McNode {
     x: number;
@@ -96,16 +95,14 @@ export abstract class McNode {
     }
 
     /**
-     * @method getLocalBounds
-     * @description The box around the node in its own space, before rotation
+     * The box around the node in its own space, before rotation
      * and scale. For shapes it leaves out the stroke.
      * @returns The box in the node's own space.
      */
     abstract getLocalBounds(): Rect;
 
     /**
-     * @method resize
-     * @description Resizes the node so the anchor stays in place on the board
+     * Resizes the node so the anchor stays in place on the board
      * and the opposite corner of its bounds goes to the corner point. Nodes
      * that keep their proportions follow the larger side.
      * @param anchor A corner of the local bounds, in the node's own space.
@@ -136,8 +133,7 @@ export abstract class McNode {
     }
 
     /**
-     * @method containsPoint
-     * @description Ignores visibility, so a hidden node still contains points.
+     * Ignores visibility, so a hidden node still contains points.
      * @param point The point in board coordinates.
      * @returns Whether the point is on the node.
      */
@@ -146,16 +142,14 @@ export abstract class McNode {
     }
 
     /**
-     * @method draw
-     * @description Draws the node in its own space, with (0, 0) at its
+     * Draws the node in its own space, with (0, 0) at its
      * position. Context changes are restored afterwards.
      * @param context The context to draw on.
      */
     protected abstract draw(context: CanvasRenderingContext2D): void;
 
     /**
-     * @method containsLocalPoint
-     * @description Uses the local bounds; override it for shapes that aren't
+     * Uses the local bounds; override it for shapes that aren't
      * boxes.
      * @param point The point in the node's own space.
      * @returns Whether the point is on the node.

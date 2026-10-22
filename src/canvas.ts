@@ -13,7 +13,7 @@ import {
 import type { McNode } from "./node.js";
 import { Shape } from "./shape.js";
 import type { Paint, Point, Rect } from "./types.js";
-import { clamp, distance, manhattanDistance, midpoint, rectCorners, rectsOverlap } from "./util.js";
+import { clamp, distance, midpoint, rectCorners, rectsOverlap } from "./util.js";
 
 export interface CanvasOptions {
     width?: number;
@@ -27,8 +27,7 @@ interface Gesture {
 }
 
 /**
- * @class Canvas
- * @description Draws nodes on a canvas element. Without both width and
+ * Draws nodes on a canvas element. Without both width and
  * height, it fills its parent element and follows its size. Nodes are
  * positioned in board coordinates, which zoom and panX/panY map to screen
  * coordinates: CSS pixels from the canvas's top-left. The user selects nodes
@@ -117,8 +116,7 @@ export class Canvas {
     }
 
     /**
-     * @method add
-     * @description Adds nodes, taking each out of any other canvas.
+     * Adds nodes, taking each out of any other canvas.
      * @param nodes The nodes to add.
      * @returns The canvas, for chaining.
      */
@@ -199,8 +197,7 @@ export class Canvas {
     }
 
     /**
-     * @method requestRender
-     * @description Renders on the next frame, once however often it's called.
+     * Renders on the next frame, once however often it's called.
      */
     requestRender(): void {
         if (!this._pendingFrame) {
@@ -212,8 +209,7 @@ export class Canvas {
     }
 
     /**
-     * @method drawOutline
-     * @description Outlines a node as the selection is outlined, with resize
+     * Outlines a node as the selection is outlined, with resize
      * handles if it's resizable, for use in drawOverlay. Hidden nodes get no
      * outline.
      * @param node The node to outline.
@@ -248,8 +244,7 @@ export class Canvas {
     }
 
     /**
-     * @method pointFromEvent
-     * @description Converts an event's position to board coordinates.
+     * Converts an event's position to board coordinates.
      * @param event Anything with clientX and clientY.
      * @returns The point in board coordinates.
      */
@@ -266,8 +261,7 @@ export class Canvas {
     }
 
     /**
-     * @method zoomAt
-     * @description Zooms, within MIN_ZOOM and MAX_ZOOM, keeping the board
+     * Zooms, within MIN_ZOOM and MAX_ZOOM, keeping the board
      * under a screen point in place.
      * @param point The screen point to zoom at.
      * @param zoom The new zoom.
@@ -277,8 +271,7 @@ export class Canvas {
     }
 
     /**
-     * @method nodeAt
-     * @description Finds the topmost visible node at a point.
+     * Finds the topmost visible node at a point.
      * @param point The point in board coordinates.
      * @param filter Returns false for nodes to skip.
      * @returns The node, or null.
@@ -298,8 +291,7 @@ export class Canvas {
     }
 
     /**
-     * @method resize
-     * @description Sets a fixed size, so it stops following its parent.
+     * Sets a fixed size, so it stops following its parent.
      * @param width In CSS pixels.
      * @param height In CSS pixels.
      */
@@ -482,7 +474,7 @@ export class Canvas {
                     return;
                 }
                 const [screenPoint] = this._pointers.values();
-                if (!moved && manhattanDistance(start, screenPoint) < MIN_MOVEMENT_PX) {
+                if (!moved && distance(start, screenPoint) < MIN_MOVEMENT_PX) {
                     return;
                 }
                 moved = true;
@@ -518,7 +510,7 @@ export class Canvas {
                     return;
                 }
                 const [screenPoint] = this._pointers.values();
-                if (!resized && manhattanDistance(start, screenPoint) < MIN_MOVEMENT_PX) {
+                if (!resized && distance(start, screenPoint) < MIN_MOVEMENT_PX) {
                     return;
                 }
                 resized = true;

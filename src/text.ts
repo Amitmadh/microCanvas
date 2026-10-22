@@ -25,8 +25,7 @@ export interface McTextOptions extends McNodeOptions {
 }
 
 /**
- * @class McText
- * @description A single line of text, aligned to the node's position by
+ * A single line of text, aligned to the node's position by
  * align and baseline.
  */
 export class McText extends McNode {
@@ -67,8 +66,7 @@ export class McText extends McNode {
     }
 
     /**
-     * @method getLocalBounds
-     * @description The advance width by the font's full height, grown to fit
+     * The advance width by the font's full height, grown to fit
      * letters that reach past it, such as italics.
      * @returns The box in the text's own space.
      */
