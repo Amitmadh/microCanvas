@@ -173,6 +173,28 @@ describe("Canvas", () => {
     });
 
     // ======================================================
+    it("keeps draw order as layers change and nodes are removed", () => {
+        const canvas = addCanvas();
+        const below = new Rectangle({ x: 10, y: 10, width: 50, height: 50, fill: "rgb(255, 0, 0)" });
+        const above = new Rectangle({ x: 30, y: 30, width: 50, height: 50, fill: "rgb(0, 0, 255)" });
+        canvas.add(below, above);
+
+        canvas.render();
+        expect(getPixel(canvas, 45, 45)).toEqual([0, 0, 255, 255]);
+        expect(canvas.nodeAt({ x: 45, y: 45 })).toBe(above);
+
+        below.layer = 1;
+        canvas.render();
+        expect(getPixel(canvas, 45, 45)).toEqual([255, 0, 0, 255]);
+        expect(canvas.nodeAt({ x: 45, y: 45 })).toBe(below);
+
+        canvas.remove(below);
+        canvas.render();
+        expect(getPixel(canvas, 45, 45)).toEqual([0, 0, 255, 255]);
+        expect(canvas.nodeAt({ x: 45, y: 45 })).toBe(above);
+    });
+
+    // ======================================================
     it("draws what drawing every node draws, at any zoom and pan", () => {
         expect(compareWithEveryNodeDrawn()).toBe(0);
     });

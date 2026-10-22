@@ -99,6 +99,26 @@ describe("Pointer events", () => {
     });
 
     // ======================================================
+    it("stops moving a node that's removed mid-drag", () => {
+        const canvas = addCanvas();
+        const rect = addRect(canvas);
+        let changing = 0;
+        let changes = 0;
+        canvas.whileChange = () => changing++;
+        canvas.onChange = () => changes++;
+
+        simulatePointerDown(canvas, { x: 150, y: 70 });
+        simulatePointerMove(canvas, { x: 170, y: 70 });
+        // As when a collaborator deletes it.
+        canvas.remove(rect);
+        simulatePointerMove(canvas, { x: 230, y: 70 });
+        simulatePointerUp(canvas, { x: 230, y: 70 });
+
+        expect([rect.x, rect.y]).toEqual([120, 50]);
+        expect([changing, changes]).toEqual([1, 0]);
+    });
+
+    // ======================================================
     it("zooms around the middle of a two-finger pinch, rendering once per frame", async () => {
         const canvas = addCanvas();
         const renders = countRenders(canvas);
@@ -262,14 +282,24 @@ describe("Pointer events", () => {
     });
 
     // ======================================================
-    it("makes a resizable node selectable, and an unselectable one not resizable", () => {
-        const rect = new Rectangle({ width: 10, height: 10, resizable: true });
-        expect(rect.selectable).toBe(true);
+    it("selects draggable and resizable nodes, even with selectable off", () => {
+        const canvas = addCanvas();
+        const draggable = new Rectangle({ x: 20, y: 20, width: 40, height: 40, draggable: true });
+        const resizable = new Rectangle({ x: 100, y: 20, width: 40, height: 40, resizable: true });
+        const neither = new Rectangle({ x: 180, y: 20, width: 40, height: 40 });
+        canvas.add(draggable, resizable, neither);
 
-        rect.selectable = false;
-        expect(rect.resizable).toBe(false);
+        simulatePointerDown(canvas, { x: 40, y: 40 });
+        simulatePointerUp(canvas, { x: 40, y: 40 });
+        expect(canvas.selected).toBe(draggable);
 
-        rect.resizable = true;
-        expect(rect.selectable).toBe(true);
+        simulatePointerDown(canvas, { x: 120, y: 40 });
+        simulatePointerUp(canvas, { x: 120, y: 40 });
+        expect(canvas.selected).toBe(resizable);
+
+        simulatePointerDown(canvas, { x: 200, y: 40 });
+        simulatePointerUp(canvas, { x: 200, y: 40 });
+        expect(canvas.selected).toBe(null);
+        expect([draggable, resizable, neither].map((node) => node.selectable)).toEqual([false, false, false]);
     });
 });
