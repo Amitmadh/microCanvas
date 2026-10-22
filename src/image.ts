@@ -29,7 +29,12 @@ export class McImage extends McNode {
         this.height = height;
         
         if (!this._isLoaded()) {
-            this.image.addEventListener("load", () => this._canvas?.requestRender(), { once: true });
+            this.image.addEventListener("load", () => {
+                // Sizes left at 0 take the natural ones, known now.
+                this.width ||= this.image.naturalWidth;
+                this.height ||= this.image.naturalHeight;
+                this._canvas?.requestRender();
+            }, { once: true });
         }
     }
 
@@ -45,7 +50,9 @@ export class McImage extends McNode {
     }
 
     toJSON(): McImageJSON {
-        return { ...super.toJSON(), type: "image", src: this.image.src, width: this.width, height: this.height };
+        // As given, not resolved against the page.
+        const src = this.image.getAttribute("src") ?? this.image.src;
+        return { ...super.toJSON(), type: "image", src, width: this.width, height: this.height };
     }
 
     getLocalBounds(): Rect {

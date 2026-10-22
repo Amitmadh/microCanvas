@@ -70,7 +70,8 @@ export abstract class McNode {
 
     /**
      * Higher layers draw on top; within a layer, nodes draw by id, then in the
-     * order added.
+     * order added. So a new node can land under older ones, until
+     * Canvas.bringToFront() puts it on top.
      */
     get layer(): number {
         return this._layer;

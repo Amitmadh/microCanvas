@@ -74,6 +74,15 @@ describe("Serialization", () => {
     });
 
     // ======================================================
+    it("saves an image's URL as it was given, not resolved against the page", () => {
+        const element = document.createElement("img");
+        element.src = "assets/board-photo.png";
+        const image = new McImage({ image: element, width: 40, height: 30 });
+
+        expect(image.toJSON().src).toBe("assets/board-photo.png");
+    });
+
+    // ======================================================
     it("skips node types it doesn't know, such as a later version's", () => {
         const canvas = addCanvas();
         canvas.add(new Rectangle({ id: "old", x: 0, y: 0, width: 50, height: 50 }));
