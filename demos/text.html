@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+    Visual test for McText. Run `npm run build` first, then open this page
+    through a local server (e.g. `npx serve .` and go to /demos/text.html).
+    Browsers block module imports on file:// pages.
+
+    Each case is outlined by its bounds, and its position is a red dot.
+    Press a case and drag a corner to resize it.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Text test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <script type="module">
+        import { Canvas, Circle, McText } from "../dist/index.js";
+
+        const canvas = new Canvas(document.querySelector("canvas"));
+
+        const sample = "Hello, board!";
+        const paragraph = "The quick brown fox jumps over the lazy dog.";
+        const hebrewParagraph = "השועל החום המהיר קופץ מעל הכלב העצלן.";
+
+        const cases = [
+            ["Default", new McText({ text: sample, x: 40, y: 70 })],
+            ["28px bold", new McText({ text: sample, x: 240, y: 70, fontSize: 28, fontWeight: "bold" })],
+            ["Italic serif", new McText({
+                text: sample, x: 460, y: 70, fontSize: 28, fontStyle: "italic", fontFamily: "serif",
+            })],
+            ["Monospace, tomato", new McText({
+                text: sample, x: 680, y: 70, fontSize: 20, fontFamily: "monospace", fill: "tomato",
+            })],
+
+            ["Align left", new McText({ text: sample, x: 40, y: 180, fontSize: 24 })],
+            ["Align center", new McText({ text: sample, x: 360, y: 180, fontSize: 24, align: "center" })],
+            ["Align right", new McText({ text: sample, x: 680, y: 180, fontSize: 24, align: "right" })],
+
+            ["Baseline top", new McText({ text: sample, x: 40, y: 290, fontSize: 24, baseline: "top" })],
+            ["Baseline middle", new McText({ text: sample, x: 240, y: 290, fontSize: 24, baseline: "middle" })],
+            ["Baseline bottom", new McText({ text: sample, x: 460, y: 290, fontSize: 24, baseline: "bottom" })],
+            ["RTL (the ! moves left)", new McText({ text: sample, x: 680, y: 290, fontSize: 24, direction: "rtl" })],
+
+            ["Rotated 15°", new McText({ text: sample, x: 40, y: 400, fontSize: 24, rotation: Math.PI / 12 })],
+            ["Scaled 1.5×", new McText({ text: sample, x: 240, y: 400, fontSize: 16, scaleX: 1.5, scaleY: 1.5 })],
+            ["Opacity 0.5", new McText({ text: sample, x: 460, y: 400, fontSize: 24, opacity: 0.5 })],
+            ["Hidden (should be empty)", new McText({ text: sample, x: 680, y: 400, fontSize: 24, visible: false })],
+
+            ["Wrapped to 160", new McText({ text: paragraph, x: 40, y: 510, fontSize: 16, width: 160 })],
+            ["Line breaks", new McText({
+                text: "First line\nSecond line\n\nAfter a blank one", x: 240, y: 510, fontSize: 16, width: 160,
+            })],
+            ["Wrapped to 160, centered", new McText({
+                text: paragraph, x: 540, y: 510, fontSize: 16, width: 160, align: "center",
+            })],
+            ["Long word overflows 100", new McText({
+                text: "Supercalifragilistic word", x: 680, y: 510, fontSize: 16, width: 100,
+            })],
+
+            ["Hebrew, right to left", new McText({
+                text: "שלום, לוח!", x: 200, y: 620, fontSize: 24, direction: "rtl", align: "right",
+            })],
+            ["Hebrew wrapped to 160", new McText({
+                text: hebrewParagraph, x: 420, y: 620, fontSize: 16, width: 160, direction: "rtl", align: "right",
+            })],
+            ["Hebrew and English", new McText({
+                text: "Hello שלום, board לוח!", x: 660, y: 620, fontSize: 20, direction: "rtl", align: "right",
+            })],
+        ];
+
+        for (const [text, node] of cases) {
+            node.resizable = true;
+            canvas.add(
+                new McText({ text, x: node.x, y: node.y - 36, align: node.align }),
+                node,
+                new Circle({ x: node.x, y: node.y, radius: 3, fill: "red", layer: 1 }),
+            );
+        }
+
+        canvas.drawOverlay = () => {
+            for (const [, node] of cases) {
+                canvas.drawOutline(node, "deepskyblue");
+            }
+        };
+
+        canvas.render();
+    </script>
+</body>
+</html>

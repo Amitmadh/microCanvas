@@ -124,4 +124,46 @@ describe("McText", () => {
         expect(draw("ltr", "rtl") === draw("rtl", "rtl")).toBe(true);
         expect(draw("ltr", "rtl") === draw("ltr", "ltr")).toBe(false);
     });
+
+    // ======================================================
+    it("wraps to its width at spaces and line breaks, and draws every line", () => {
+        const mono = { x: 20, y: 40, fontSize: 20, fontFamily: "monospace" };
+        const line = new McText({ ...mono, text: "aaa" }).getLocalBounds();
+        // Wide enough for "aaa", but not for "aaa bbb".
+        const text = new McText({ ...mono, text: "aaa bbb ccc\nddd", width: line.width * 2 });
+        const canvas = addCanvas({ width: 400, height: 300 });
+        canvas.add(text);
+        canvas.render();
+
+        const box = text.getLocalBounds();
+        expect(box.height / line.height).toBeCloseTo(4, 6);
+        expect(box.width).toBeCloseTo(line.width, 0);
+        // The ink reaches into the fourth line, and stays in the box.
+        const ink = inkBox(canvas);
+        expect(ink.bottom).toBeGreaterThan(text.y + box.y + 3 * line.height);
+        expect(ink.bottom).toBeLessThanOrEqual(text.y + box.y + box.height + 1);
+        expect(ink.right).toBeLessThanOrEqual(text.x + box.x + box.width + 1);
+        // Without a width, \n is drawn as a space, on one line.
+        expect(new McText({ ...mono, text: "aaa\nddd" }).getLocalBounds().height).toBeCloseTo(line.height, 6);
+    });
+
+    // ======================================================
+    it("rewraps to the width it's resized to, keeping its font", () => {
+        const mono = { fontSize: 20, fontFamily: "monospace" };
+        const letter = new McText({ ...mono, text: "a" }).getLocalBounds().width;
+        // Fits "aa bb" but not "aa bb cc", so two lines.
+        const text = new McText({ ...mono, text: "aa bb cc dd", width: 5.5 * letter });
+        const before = text.getLocalBounds();
+
+        // Wide enough for all of it, on one line.
+        text.resize({ x: before.x, y: before.y }, { x: before.x + 11.5 * letter, y: before.y + before.height });
+
+        const after = text.getLocalBounds();
+        expect(text.fontSize).toBe(20);
+        expect(text.width).toBeCloseTo(11.5 * letter, 9);
+        expect(after).toEqual(new McText({ ...mono, text: "aa bb cc dd" }).getLocalBounds());
+        // The top-left corner stays in place.
+        expect(text.x + after.x).toBeCloseTo(before.x, 9);
+        expect(text.y + after.y).toBeCloseTo(before.y, 9);
+    });
 });

@@ -14,6 +14,8 @@ import type { Paint, Point, Rect } from "./types.js";
 
 export interface McTextOptions extends McNodeOptions {
     text: string;
+    /** Wraps lines to this width, at spaces and at \n. Null keeps one line. */
+    width?: number | null;
     fontSize?: number;
     /**
      * CSS font-family. Quote names like '"Press Start 2P"' or they
@@ -33,11 +35,12 @@ export interface McTextJSON extends Required<McTextOptions> {
 }
 
 /**
- * A single line of text, aligned to the node's position by
- * align and baseline.
+ * Text aligned to the node's position by align and baseline. Given a
+ * width, it wraps into lines that stack below the first.
  */
 export class McText extends McNode {
     text: string;
+    width: number | null;
     fontSize: number;
     fontFamily: string;
     fontWeight: string | number;
@@ -48,9 +51,12 @@ export class McText extends McNode {
     direction: "ltr" | "rtl";
     private _boundsKey = "";
     private _bounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
+    private _lines: string[] = [];
+    private _lineHeight = 0;
 
     constructor({
         text,
+        width = null,
         fontSize = DEFAULT_FONT_SIZE,
         fontFamily = DEFAULT_FONT_FAMILY,
         fontWeight = DEFAULT_FONT_WEIGHT,
@@ -63,6 +69,7 @@ export class McText extends McNode {
     }: McTextOptions) {
         super(options);
         this.text = text;
+        this.width = width;
         this.fontSize = fontSize;
         this.fontFamily = fontFamily;
         this.fontWeight = fontWeight;
@@ -78,6 +85,7 @@ export class McText extends McNode {
             ...super.toJSON(),
             type: "text",
             text: this.text,
+            width: this.width,
             fontSize: this.fontSize,
             fontFamily: this.fontFamily,
             fontWeight: this.fontWeight,
@@ -90,13 +98,13 @@ export class McText extends McNode {
     }
 
     /**
-     * The advance width by the font's full height, grown to fit
-     * letters that reach past it, such as italics.
+     * The widest line's advance width by the lines' full height, grown to fit
+     * letters that reach past them, such as italics.
      * @returns The box in the text's own space.
      */
     getLocalBounds(): Rect {
         const font = this._font();
-        const key = `${font}|${this.align}|${this.baseline}|${this.direction}|${this.text}`;
+        const key = `${font}|${this.align}|${this.baseline}|${this.direction}|${this.width}|${this.text}`;
         if (key === this._boundsKey) {
             return this._bounds;
         }
@@ -108,21 +116,29 @@ export class McText extends McNode {
         context.textAlign = this.align;
         context.textBaseline = this.baseline;
         context.direction = this.direction;
-        const metrics = context.measureText(this.text);
+        this._lines = this.width === null ? [this.text] : this._wrap(context, this.width);
+        const first = context.measureText(this._lines[0]);
+        this._lineHeight = first.fontBoundingBoxAscent + first.fontBoundingBoxDescent;
 
-        // With the align and baseline set, the metrics start at the position.
-        const width = metrics.width;
-        let x = 0;
-        if (this.align === "center") {
-            x = -width / 2;
-        } else if (this.align === "right") {
-            x = -width;
-        }
-
-        const left = Math.min(x, -metrics.actualBoundingBoxLeft);
-        const right = Math.max(x + width, metrics.actualBoundingBoxRight);
-        const top = -Math.max(metrics.fontBoundingBoxAscent, metrics.actualBoundingBoxAscent);
-        const bottom = Math.max(metrics.fontBoundingBoxDescent, metrics.actualBoundingBoxDescent);
+        let left = Infinity;
+        let right = -Infinity;
+        let top = Infinity;
+        let bottom = -Infinity;
+        this._lines.forEach((line, i) => {
+            const metrics = context.measureText(line);
+            const y = i * this._lineHeight;
+            const width = metrics.width;
+            let x = 0;
+            if (this.align === "center") {
+                x = -width / 2;
+            } else if (this.align === "right") {
+                x = -width;
+            }
+            left = Math.min(left, x, -metrics.actualBoundingBoxLeft);
+            right = Math.max(right, x + metrics.width, metrics.actualBoundingBoxRight);
+            top = Math.min(top, y - Math.max(metrics.fontBoundingBoxAscent, metrics.actualBoundingBoxAscent));
+            bottom = Math.max(bottom, y + Math.max(metrics.fontBoundingBoxDescent, metrics.actualBoundingBoxDescent));
+        });
         const bounds = { x: left, y: top, width: right - left, height: bottom - top };
 
         this._bounds = bounds;
@@ -132,35 +148,57 @@ export class McText extends McNode {
     }
 
     resize(anchor: Point, corner: Point): void {
+        const fixed = this.localToBoard(anchor);
+        this.width = Math.abs(corner.x - anchor.x);
         const bounds = this.getLocalBounds();
-        const scaleY = Math.abs(corner.y - anchor.y) / bounds.height;
-        const scale = bounds.width > 0 ? Math.max(Math.abs(corner.x - anchor.x) / bounds.width, scaleY) : scaleY;
-        // Text grows from its position, so this keeps the anchor in place.
-        const position = this.localToBoard({ x: anchor.x * (1 - scale), y: anchor.y * (1 - scale) });
-        this.x = position.x;
-        this.y = position.y;
-        this.fontSize *= scale;
+        const moved = this.localToBoard({
+            x: anchor.x < corner.x ? bounds.x : bounds.x + bounds.width,
+            y: anchor.y < corner.y ? bounds.y : bounds.y + bounds.height,
+        });
+        this.x += fixed.x - moved.x;
+        this.y += fixed.y - moved.y;
     }
 
     protected draw(context: CanvasRenderingContext2D): void {
+        // Lays out the lines again, if anything changed.
+        this.getLocalBounds();
         context.font = `${DEFAULT_FONT_STYLE} ${DEFAULT_FONT_WEIGHT} ${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
         context.font = this._font();
         context.fillStyle = this.fill;
         context.textAlign = this.align;
         context.textBaseline = this.baseline;
         context.direction = this.direction;
-        context.fillText(this.text, 0, 0);
+        this._lines.forEach((line, i) => context.fillText(line, 0, i * this._lineHeight));
     }
 
     private _font(): string {
         return `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
     }
 
-    private _fontLoaded(font: string, text: string): boolean {
-    try {
-        return document.fonts.check(font, text);
-    } catch {
-        return true;
+    // Breaks the text at \n, then at the last space that keeps each line within width.
+    private _wrap(context: CanvasRenderingContext2D, width: number): string[] {
+        const lines: string[] = [];
+        for (const paragraph of this.text.split("\n")) {
+            let line: string | null = null;
+            for (const word of paragraph.split(" ")) {
+                const longer: string = line === null ? word : `${line} ${word}`;
+                if (line !== null && context.measureText(longer).width > width) {
+                    lines.push(line);
+                    line = word;
+                } else {
+                    line = longer;
+                }
+            }
+            lines.push(line ?? "");
+        }
+        return lines;
     }
-}
+
+    private _fontLoaded(font: string, text: string): boolean {
+        try {
+            return document.fonts.check(font, text);
+        } catch {
+            return true;
+        }
+    }
 }

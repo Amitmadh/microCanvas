@@ -219,7 +219,7 @@ describe("Pointer events", () => {
     });
 
     // ======================================================
-    it("keeps a circle round, and resizes text by its font size", () => {
+    it("keeps a circle round, and resizes text by its width, keeping its font", () => {
         const canvas = addCanvas();
         const circle = new Circle({ x: 300, y: 100, radius: 40, resizable: true });
         const text = new McText({ text: "Note", x: 100, y: 120, fontSize: 20, resizable: true });
@@ -239,12 +239,12 @@ describe("Pointer events", () => {
         simulatePointerMove(canvas, { x: handle.x + bounds.width, y: handle.y });
         simulatePointerUp(canvas, { x: handle.x + bounds.width, y: handle.y });
 
-        expect(text.fontSize).toBeCloseTo(40, 9);
-        // Font metrics are rounded, so text only grows about in proportion.
+        expect(text.width).toBeCloseTo(2 * bounds.width, 9);
+        expect(text.fontSize).toBe(20);
         const after = text.getLocalBounds();
         const newAnchor = text.localToBoard({ x: after.x, y: after.y });
-        expect(Math.abs(newAnchor.x - anchor.x)).toBeLessThanOrEqual(1);
-        expect(Math.abs(newAnchor.y - anchor.y)).toBeLessThanOrEqual(1);
+        expect(newAnchor.x).toBeCloseTo(anchor.x, 9);
+        expect(newAnchor.y).toBeCloseTo(anchor.y, 9);
     });
 
     // ======================================================
