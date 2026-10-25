@@ -23,7 +23,7 @@ async function addBoard(): Promise<Canvas> {
         new Circle({ id: "circle", x: 250, y: 100, radius: 40, scaleY: 0.5, layer: -1, fill: "tomato", selectable: true }),
         new McText({
             id: "text", text: "שלום עולם", width: 100, x: 400, y: 60, fontSize: 30, fontFamily: "serif", fontWeight: 700,
-            fontStyle: "italic", fill: "slateblue", align: "center", baseline: "top", direction: "rtl",
+            fontStyle: "italic", fill: "slateblue", align: "center", baseline: "top", direction: "rtl", writable: true,
         }),
         await McImage.load(redImageURL(), { id: "image", x: 480, y: 120, width: 80, height: 40 }),
         new Rectangle({ id: "hidden", x: 0, y: 0, width: 10, height: 10, visible: false }),

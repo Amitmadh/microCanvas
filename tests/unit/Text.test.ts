@@ -143,8 +143,8 @@ describe("McText", () => {
         expect(ink.bottom).toBeGreaterThan(text.y + box.y + 3 * line.height);
         expect(ink.bottom).toBeLessThanOrEqual(text.y + box.y + box.height + 1);
         expect(ink.right).toBeLessThanOrEqual(text.x + box.x + box.width + 1);
-        // Without a width, \n is drawn as a space, on one line.
-        expect(new McText({ ...mono, text: "aaa\nddd" }).getLocalBounds().height).toBeCloseTo(line.height, 6);
+        // Without a width, \n still breaks the line.
+        expect(new McText({ ...mono, text: "aaa\nddd" }).getLocalBounds().height).toBeCloseTo(2 * line.height, 6);
     });
 
     // ======================================================

@@ -5,7 +5,8 @@
     Browsers block module imports on file:// pages.
 
     Each case is outlined by its bounds, and its position is a red dot.
-    Press a case and drag a corner to resize it.
+    Press a case and drag a corner to resize it, or double-click it to edit
+    its text.
 -->
 <html lang="en">
 <head>
@@ -80,6 +81,7 @@
 
         for (const [text, node] of cases) {
             node.resizable = true;
+            node.writable = true;
             canvas.add(
                 new McText({ text, x: node.x, y: node.y - 36, align: node.align }),
                 node,

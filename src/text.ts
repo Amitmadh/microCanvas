@@ -14,7 +14,7 @@ import type { Paint, Point, Rect } from "./types.js";
 
 export interface McTextOptions extends McNodeOptions {
     text: string;
-    /** Wraps lines to this width, at spaces and at \n. Null keeps one line. */
+    /** Wraps lines to this width, at spaces. Null breaks them only at \n. */
     width?: number | null;
     fontSize?: number;
     /**
@@ -28,6 +28,8 @@ export interface McTextOptions extends McNodeOptions {
     align?: "left" | "center" | "right";
     baseline?: CanvasTextBaseline;
     direction?: "ltr" | "rtl";
+    /** Lets the user edit the text in place by double-clicking it. */
+    writable?: boolean;
 }
 
 export interface McTextJSON extends Required<McTextOptions> {
@@ -35,8 +37,8 @@ export interface McTextJSON extends Required<McTextOptions> {
 }
 
 /**
- * Text aligned to the node's position by align and baseline. Given a
- * width, it wraps into lines that stack below the first.
+ * Text aligned to the node's position by align and baseline. Its lines
+ * break at \n, and wrap at spaces given a width, and stack below the first.
  */
 export class McText extends McNode {
     text: string;
@@ -49,10 +51,13 @@ export class McText extends McNode {
     align: "left" | "center" | "right";
     baseline: CanvasTextBaseline;
     direction: "ltr" | "rtl";
+    writable: boolean;
     private _boundsKey = "";
     private _bounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
     private _lines: string[] = [];
     private _lineHeight = 0;
+    private _ascent = 0;
+    private _widest = 0;
 
     constructor({
         text,
@@ -65,6 +70,7 @@ export class McText extends McNode {
         align = DEFAULT_TEXT_ALIGN,
         baseline = DEFAULT_TEXT_BASELINE,
         direction = DEFAULT_TEXT_DIRECTION,
+        writable = false,
         ...options
     }: McTextOptions) {
         super(options);
@@ -78,6 +84,7 @@ export class McText extends McNode {
         this.align = align;
         this.baseline = baseline;
         this.direction = direction;
+        this.writable = writable;
     }
 
     toJSON(): McTextJSON {
@@ -94,6 +101,7 @@ export class McText extends McNode {
             align: this.align,
             baseline: this.baseline,
             direction: this.direction,
+            writable: this.writable,
         };
     }
 
@@ -116,18 +124,21 @@ export class McText extends McNode {
         context.textAlign = this.align;
         context.textBaseline = this.baseline;
         context.direction = this.direction;
-        this._lines = this.width === null ? [this.text] : this._wrap(context, this.width);
+        this._lines = this.width === null ? this.text.split("\n") : this._wrap(context, this.width);
         const first = context.measureText(this._lines[0]);
         this._lineHeight = first.fontBoundingBoxAscent + first.fontBoundingBoxDescent;
+        this._ascent = first.fontBoundingBoxAscent;
 
         let left = Infinity;
         let right = -Infinity;
         let top = Infinity;
         let bottom = -Infinity;
+        let widest = 0;
         this._lines.forEach((line, i) => {
             const metrics = context.measureText(line);
             const y = i * this._lineHeight;
             const width = metrics.width;
+            widest = Math.max(widest, width);
             let x = 0;
             if (this.align === "center") {
                 x = -width / 2;
@@ -141,6 +152,7 @@ export class McText extends McNode {
         });
         const bounds = { x: left, y: top, width: right - left, height: bottom - top };
 
+        this._widest = widest;
         this._bounds = bounds;
         // Until a web font loads, the text is measured in a fallback font.
         this._boundsKey = this._fontLoaded(font, this.text) ? key : "";
@@ -157,6 +169,27 @@ export class McText extends McNode {
         });
         this.x += fixed.x - moved.x;
         this.y += fixed.y - moved.y;
+    }
+
+    /**
+     * @internal
+     * Where Canvas puts the editor: the lines' box by their advance widths
+     * and the font's height, in the text's own space, and the font.
+     */
+    _editorLayout(): { box: Rect; font: string; lineHeight: number } {
+        this.getLocalBounds();
+        const width = this.width ?? this._widest;
+        let x = 0;
+        if (this.align === "center") {
+            x = -width / 2;
+        } else if (this.align === "right") {
+            x = -width;
+        }
+        return {
+            box: { x, y: -this._ascent, width, height: this._lines.length * this._lineHeight },
+            font: this._font(),
+            lineHeight: this._lineHeight,
+        };
     }
 
     protected draw(context: CanvasRenderingContext2D): void {

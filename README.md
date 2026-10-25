@@ -31,7 +31,8 @@ canvas.render();
 - After changing anything in code, call `render()`, or `requestRender()` to draw once on the next frame.
 - Every node has `id`, `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity`, `visible`, `layer`, `selectable`, `draggable` and `resizable`.
 - Higher layers draw on top. Within a layer, nodes draw by `id`, so every board stacks them alike, and a new node can land under older ones: `canvas.bringToFront(node)` puts it on top.
-- `McText` is one line, unless given a `width`: then it wraps to it, at spaces and at `\n`. Resizing it by a corner sets the width, and the font stays.
+- `McText` lines break at `\n`, and given a `width` they also wrap to it at spaces. Resizing it by a corner sets the width, and the font stays.
+- A `writable` text is edited in place by double-clicking it. Enter adds a line; Escape or a press elsewhere ends it, and `onChange` reports the edited node.
 - `drawOverlay` draws on top of each render, such as more outlines with `drawOutline(node, color)`.
 - `JSON.stringify(canvas)` saves the background and nodes, images by their URL. `canvas.fromJSON(JSON.parse(saved))` replaces them with the saved ones.
 - To fill a parent, give the canvas a wrapper of its own, with no padding and nothing else inside.

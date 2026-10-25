@@ -15,6 +15,7 @@ import { McImage, type McImageJSON } from "./image.js";
 import type { McNode } from "./node.js";
 import { Rectangle, type RectangleJSON } from "./rectangle.js";
 import { Shape } from "./shape.js";
+import { TextEditor } from "./text-editor.js";
 import { McText, type McTextJSON } from "./text.js";
 import type { Paint, Point, Rect } from "./types.js";
 import { clamp, distance, midpoint, rectCorners, rectsOverlap } from "./util.js";
@@ -44,7 +45,8 @@ interface Gesture {
  * coordinates: CSS pixels from the canvas's top-left. The user selects nodes
  * by pressing them, drags draggable ones, resizes resizable ones by the
  * corners of the selection, pans by dragging elsewhere or scrolling, and
- * zooms with a pinch or Ctrl+wheel.
+ * zooms with a pinch or Ctrl+wheel. Double-clicking a writable text edits it
+ * in place, until Escape or a press elsewhere; Enter adds a line.
  * @param canvas The canvas element.
  * @param options Width and height in CSS pixels, and the background.
  */
@@ -64,9 +66,9 @@ export class Canvas {
      */
     drawOverlay: ((context: CanvasRenderingContext2D) => void) | null = null;
     onSelect: ((node: McNode | null) => void) | null = null;
-    /** Called once the user finishes moving or resizing a node. */
+    /** Called once the user finishes moving, resizing or editing a node. */
     onChange: ((node: McNode) => void) | null = null;
-    /** Called while the user moves or resizes a node. */
+    /** Called while the user moves, resizes or edits a node. */
     whileChange: ((node: McNode) => void) | null = null;
 
     private readonly _nodes = new Set<McNode>();
@@ -87,6 +89,8 @@ export class Canvas {
     // Moving or resizing a node, panning or pinching.
     private _gesture: Gesture | null = null;
     private _pendingFrame = 0;
+    // Open while the user edits a text.
+    private _editor: TextEditor | null = null;
 
     constructor(canvas: HTMLCanvasElement, {
         width,
@@ -148,6 +152,9 @@ export class Canvas {
             if (node._canvas === this) {
                 node._canvas = null;
                 this._nodes.delete(node);
+                if (node === this._editor?.node) {
+                    this._stopEditing();
+                }
                 if (node === this.selected) {
                     this.selected = null;
                     this.onSelect?.(null);
@@ -217,7 +224,8 @@ export class Canvas {
         this.context.scale(this.zoom, this.zoom);
         for (const node of this._sortedNodes()) {
             try {
-                if (rectsOverlap(this._boardRect(node), view)) {
+                // The text being edited shows in its editor instead and culling.
+                if (node !== this._editor?.node && rectsOverlap(this._boardRect(node), view)) {
                     node.render(this.context);
                 }
             } catch (error) {
@@ -238,6 +246,7 @@ export class Canvas {
         if (this.selected) {
             this.drawOutline(this.selected, this.selectionColor);
         }
+        this._editor?.place();
 
         if (this.drawOverlay) {
             this.context.save();
@@ -354,6 +363,7 @@ export class Canvas {
     }
 
     destroy(): void {
+        this._stopEditing();
         this._stopFitting();
         this._abortController.abort();
         cancelAnimationFrame(this._pendingFrame);
@@ -455,6 +465,7 @@ export class Canvas {
         this.canvas.style.touchAction = "none";
 
         this._listen<PointerEvent>(this.canvas, "pointerdown", (event) => {
+            this._stopEditing();
             if (event.button !== 0 || this._pointers.size === 2) {
                 return;
             }
@@ -495,6 +506,25 @@ export class Canvas {
             }
             this.requestRender();
         }, { passive: false });
+
+        this._listen<MouseEvent>(this.canvas, "dblclick", (event) => {
+            const node = this.nodeAt(this.pointFromEvent(event));
+            if (node instanceof McText && node.writable) {
+                this._edit(node);
+            }
+        });
+    }
+
+    private _edit(node: McText): void {
+        this._stopEditing();
+        this._editor = new TextEditor(this, node, () => this._stopEditing());
+        this.requestRender();
+    }
+
+    private _stopEditing(): void {
+        const editor = this._editor;
+        this._editor = null;
+        editor?.close();
     }
 
     private _press(): Gesture {

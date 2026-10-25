@@ -41,6 +41,16 @@ function simulateWheel(canvas: Canvas, { x, y, deltaX = 0, deltaY = 0, ctrlKey =
     }));
 }
 
+function simulateDoubleClick(canvas: Canvas, { x, y }: PointerOptions): void {
+    const rect = canvas.canvas.getBoundingClientRect();
+    canvas.canvas.dispatchEvent(new MouseEvent("dblclick", { clientX: rect.left + x, clientY: rect.top + y }));
+}
+
+// The textarea the canvas edits text in, if it's editing.
+function editorOf(canvas: Canvas): HTMLTextAreaElement | null {
+    return canvas.canvas.parentElement!.querySelector("textarea");
+}
+
 // A draggable 100 × 40 rectangle at (100, 50).
 function addRect(canvas: Canvas): Rectangle {
     const rect = new Rectangle({ x: 100, y: 50, width: 100, height: 40, fill: "tomato", draggable: true });
@@ -301,5 +311,84 @@ describe("Pointer events", () => {
         simulatePointerUp(canvas, { x: 200, y: 40 });
         expect(canvas.selected).toBe(null);
         expect([draggable, resizable, neither].map((node) => node.selectable)).toEqual([false, false, false]);
+    });
+
+    // ======================================================
+    it("edits a writable text in place on double-click, until Escape or a press elsewhere", () => {
+        const canvas = addCanvas();
+        const text = new McText({ text: "Note", x: 100, y: 120, fontSize: 20, writable: true });
+        canvas.add(text);
+        let changing = 0;
+        const changes: string[] = [];
+        canvas.whileChange = () => changing++;
+        canvas.onChange = () => changes.push(text.text);
+
+        simulateDoubleClick(canvas, { x: 110, y: 110 });
+        const editor = editorOf(canvas)!;
+        expect(editor.value).toBe("Note");
+        editor.value = "Note 2";
+        editor.dispatchEvent(new Event("input"));
+        expect([text.text, changing]).toEqual(["Note 2", 1]);
+        editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+        expect([editorOf(canvas), changes]).toEqual([null, ["Note 2"]]);
+
+        // Ended without a change, there's no onChange.
+        simulateDoubleClick(canvas, { x: 110, y: 110 });
+        expect(editorOf(canvas)).not.toBeNull();
+        simulatePointerDown(canvas, { x: 400, y: 50 });
+        simulatePointerUp(canvas, { x: 400, y: 50 });
+        expect([editorOf(canvas), changes]).toEqual([null, ["Note 2"]]);
+
+        text.writable = false;
+        simulateDoubleClick(canvas, { x: 110, y: 110 });
+        expect(editorOf(canvas)).toBeNull();
+    });
+
+    // ======================================================
+    it("adds a line on Enter, with or without a width, editing on", () => {
+        const canvas = addCanvas();
+        canvas.add(
+            new McText({ text: "One line", x: 50, y: 60, writable: true }),
+            new McText({ text: "Wrapped", x: 50, y: 150, width: 200, writable: true }),
+        );
+        // Whether Enter types a line break, and whether editing goes on.
+        const pressEnter = () => {
+            const event = new KeyboardEvent("keydown", { key: "Enter", cancelable: true });
+            editorOf(canvas)!.dispatchEvent(event);
+            return [!event.defaultPrevented, editorOf(canvas) !== null];
+        };
+
+        simulateDoubleClick(canvas, { x: 60, y: 55 });
+        expect(pressEnter()).toEqual([true, true]);
+
+        simulateDoubleClick(canvas, { x: 60, y: 145 });
+        expect(pressEnter()).toEqual([true, true]);
+    });
+
+    // ======================================================
+    it("puts the editor over its text at the board's zoom, and stops drawing the text meanwhile", () => {
+        const canvas = addCanvas();
+        canvas.zoom = 2;
+        canvas.panX = -50;
+        const text = new McText({ text: "Note", x: 100, y: 60, fontSize: 20, writable: true });
+        canvas.add(text);
+        const drawn = () => {
+            canvas.render();
+            return canvas.context.getImageData(0, 0, canvas.canvas.width, canvas.canvas.height).data.some((value) => value > 0);
+        };
+        expect(drawn()).toBe(true);
+
+        simulateDoubleClick(canvas, { x: 170, y: 110 });
+        expect(drawn()).toBe(false);
+        const editor = editorOf(canvas)!.getBoundingClientRect();
+        const board = canvas.canvas.getBoundingClientRect();
+        const bounds = text.getLocalBounds();
+        const topLeft = canvas.boardToScreen(text.localToBoard({ x: bounds.x, y: bounds.y }));
+        const bottomRight = canvas.boardToScreen(text.localToBoard({ x: bounds.x + bounds.width, y: bounds.y + bounds.height }));
+        // The editor's lines start where the drawn ones did, a font size in from its sides.
+        expect(editor.left - board.left + 2 * text.fontSize).toBeCloseTo(topLeft.x, 0);
+        expect(editor.top - board.top).toBeCloseTo(topLeft.y, 0);
+        expect(editor.right - board.left).toBeGreaterThanOrEqual(bottomRight.x);
+        expect(editor.bottom - board.top).toBeGreaterThanOrEqual(bottomRight.y);
     });
 });
