@@ -21,6 +21,20 @@ function inkBox(canvas: Canvas) {
     return { left: left / ratio, right: right / ratio, top: top / ratio, bottom: bottom / ratio };
 }
 
+// The ink box of a text drawn alone on a new canvas.
+function inkOf(text: McText) {
+    const canvas = addCanvas({ width: 400, height: 200 });
+    canvas.add(text);
+    canvas.render();
+    return inkBox(canvas);
+}
+
+// The alpha drawn at a point, in CSS pixels.
+function alphaAt(canvas: Canvas, x: number, y: number) {
+    const ratio = canvas.pixelRatio;
+    return canvas.context.getImageData(Math.floor(x * ratio), Math.floor(y * ratio), 1, 1).data[3];
+}
+
 describe("McText", () => {
     // ======================================================
     it("is drawn and hit to the right of x on a right-to-left page", () => {
@@ -165,5 +179,81 @@ describe("McText", () => {
         // The top-left corner stays in place.
         expect(text.x + after.x).toBeCloseTo(before.x, 9);
         expect(text.y + after.y).toBeCloseTo(before.y, 9);
+    });
+
+    // ======================================================
+    it("wraps inside its padding when resized", () => {
+        const mono = { fontSize: 20, fontFamily: "monospace", padding: 8 };
+        const letter = new McText({ ...mono, padding: 0, text: "a" }).getLocalBounds().width;
+        const text = new McText({ ...mono, text: "aa bb cc dd", width: 5.5 * letter });
+        const before = text.getLocalBounds();
+
+        // Wide enough for all of it on one line, with the padding on both sides.
+        text.resize({ x: before.x, y: before.y }, { x: before.x + 11.5 * letter + 16, y: before.y + before.height });
+
+        const after = text.getLocalBounds();
+        expect(text.width).toBeCloseTo(11.5 * letter, 9);
+        expect(after).toEqual(new McText({ ...mono, text: "aa bb cc dd" }).getLocalBounds());
+        expect(text.x + after.x).toBeCloseTo(before.x, 9);
+        expect(text.y + after.y).toBeCloseTo(before.y, 9);
+    });
+
+    // ======================================================
+    it("grows its bounds by its padding, and fills them with its background", () => {
+        const options = { text: "Hello", x: 100, y: 100, fontSize: 30 };
+        const plain = new McText(options).getLocalBounds();
+        const text = new McText({ ...options, padding: 10, background: "red" });
+        const canvas = addCanvas({ width: 400, height: 200 });
+        canvas.add(text);
+        canvas.render();
+
+        const box = text.getLocalBounds();
+        expect(box).toEqual({ x: plain.x - 10, y: plain.y - 10, width: plain.width + 20, height: plain.height + 20 });
+        const left = text.x + box.x;
+        const top = text.y + box.y;
+        const ink = inkBox(canvas);
+        // 1 px of slack for antialiasing at the edges.
+        expect(Math.abs(ink.left - left)).toBeLessThanOrEqual(1);
+        expect(Math.abs(ink.right - (left + box.width))).toBeLessThanOrEqual(1);
+        expect(Math.abs(ink.top - top)).toBeLessThanOrEqual(1);
+        expect(Math.abs(ink.bottom - (top + box.height))).toBeLessThanOrEqual(1);
+        expect(canvas.nodeAt({ x: left + 3, y: top + 3 })).toBe(text);
+
+        // Rounded, the corner is left out, and the top edge's middle isn't.
+        text.cornerRadius = 12;
+        canvas.render();
+        expect(alphaAt(canvas, left + 1, top + 1)).toBe(0);
+        expect(alphaAt(canvas, left + box.width / 2, top + 1)).toBe(255);
+    });
+
+    // ======================================================
+    it("spaces its lines by its line height", () => {
+        const mono = { text: "aaa\naaa", x: 20, y: 40, fontSize: 20, fontFamily: "monospace" };
+        const line = new McText({ ...mono, text: "aaa" }).getLocalBounds().height;
+        const tight = new McText(mono);
+        const spaced = new McText({ ...mono, lineHeight: 2 });
+
+        expect(spaced.getLocalBounds().height - tight.getLocalBounds().height).toBeCloseTo(line, 6);
+        // The second line is drawn a line lower, give or take a pixel.
+        expect(Math.abs(inkOf(spaced).bottom - inkOf(tight).bottom - line)).toBeLessThanOrEqual(1);
+    });
+
+    // ======================================================
+    it("outlines its letters within its bounds, grown by half the outline", () => {
+        const options = { text: "Hello", x: 60, y: 120, fontSize: 60 };
+        const plain = new McText(options);
+        const outlined = new McText({ ...options, stroke: "navy", strokeWidth: 12 });
+        const p = plain.getLocalBounds();
+        const box = outlined.getLocalBounds();
+        expect(box).toEqual({ x: p.x - 6, y: p.y - 6, width: p.width + 12, height: p.height + 12 });
+
+        const plainInk = inkOf(plain);
+        const ink = inkOf(outlined);
+        expect(ink.left).toBeGreaterThanOrEqual(outlined.x + box.x - 1);
+        expect(ink.right).toBeLessThanOrEqual(outlined.x + box.x + box.width + 1);
+        expect(ink.top).toBeGreaterThanOrEqual(outlined.y + box.y - 1);
+        expect(ink.bottom).toBeLessThanOrEqual(outlined.y + box.y + box.height + 1);
+        // The outline reaches past the letters.
+        expect(ink.right - ink.left).toBeGreaterThan(plainInk.right - plainInk.left + 8);
     });
 });

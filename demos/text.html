@@ -77,6 +77,22 @@
             ["Hebrew and English", new McText({
                 text: "Hello שלום, board לוח!", x: 660, y: 620, fontSize: 20, direction: "rtl", align: "right",
             })],
+
+            ["Padding 10, background", new McText({
+                text: sample, x: 40, y: 740, fontSize: 20, padding: 10, background: "lightyellow",
+            })],
+            ["Rounded background", new McText({
+                text: sample, x: 240, y: 740, fontSize: 20, padding: 10, background: "lavender", cornerRadius: 12,
+            })],
+            ["Line height 1.8", new McText({ text: paragraph, x: 460, y: 740, fontSize: 16, width: 160, lineHeight: 1.8 })],
+            ["Outlined", new McText({
+                text: sample, x: 680, y: 740, fontSize: 28, fontWeight: "bold", fill: "white", stroke: "navy", strokeWidth: 3,
+            })],
+
+            ["All together", new McText({
+                text: paragraph, x: 40, y: 880, fontSize: 16, width: 160, lineHeight: 1.4, padding: 8,
+                background: "honeydew", cornerRadius: 8, stroke: "seagreen", strokeWidth: 1,
+            })],
         ];
 
         for (const [text, node] of cases) {

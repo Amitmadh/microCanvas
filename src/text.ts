@@ -4,6 +4,7 @@ import {
     DEFAULT_FONT_SIZE,
     DEFAULT_FONT_STYLE,
     DEFAULT_FONT_WEIGHT,
+    DEFAULT_STROKE_WIDTH,
     DEFAULT_TEXT_ALIGN,
     DEFAULT_TEXT_BASELINE,
     DEFAULT_TEXT_DIRECTION,
@@ -25,9 +26,17 @@ export interface McTextOptions extends McNodeOptions {
     fontWeight?: string | number;
     fontStyle?: "normal" | "italic";
     fill?: Paint;
+    stroke?: Paint | null;
+    strokeWidth?: number;
+    /** Times the font's height. */
+    lineHeight?: number;
     align?: "left" | "center" | "right";
     baseline?: CanvasTextBaseline;
     direction?: "ltr" | "rtl";
+    /** Outside the width. */
+    padding?: number;
+    background?: Paint | null;
+    cornerRadius?: number;
     /** Lets the user edit the text in place by double-clicking it. */
     writable?: boolean;
 }
@@ -48,15 +57,24 @@ export class McText extends McNode {
     fontWeight: string | number;
     fontStyle: "normal" | "italic";
     fill: Paint;
+    stroke: Paint | null;
+    strokeWidth: number;
+    lineHeight: number;
     align: "left" | "center" | "right";
     baseline: CanvasTextBaseline;
     direction: "ltr" | "rtl";
+    padding: number;
+    background: Paint | null;
+    cornerRadius: number;
     writable: boolean;
+    /** @internal */
+    _editing = false;
     private _boundsKey = "";
     private _bounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
     private _lines: string[] = [];
     private _lineHeight = 0;
     private _ascent = 0;
+    private _descent = 0;
     private _widest = 0;
 
     constructor({
@@ -67,9 +85,15 @@ export class McText extends McNode {
         fontWeight = DEFAULT_FONT_WEIGHT,
         fontStyle = DEFAULT_FONT_STYLE,
         fill = DEFAULT_FILL,
+        stroke = null,
+        strokeWidth = DEFAULT_STROKE_WIDTH,
+        lineHeight = 1,
         align = DEFAULT_TEXT_ALIGN,
         baseline = DEFAULT_TEXT_BASELINE,
         direction = DEFAULT_TEXT_DIRECTION,
+        padding = 0,
+        background = null,
+        cornerRadius = 0,
         writable = false,
         ...options
     }: McTextOptions) {
@@ -81,9 +105,15 @@ export class McText extends McNode {
         this.fontWeight = fontWeight;
         this.fontStyle = fontStyle;
         this.fill = fill;
+        this.stroke = stroke;
+        this.strokeWidth = strokeWidth;
+        this.lineHeight = lineHeight;
         this.align = align;
         this.baseline = baseline;
         this.direction = direction;
+        this.padding = padding;
+        this.background = background;
+        this.cornerRadius = cornerRadius;
         this.writable = writable;
     }
 
@@ -98,21 +128,28 @@ export class McText extends McNode {
             fontWeight: this.fontWeight,
             fontStyle: this.fontStyle,
             fill: this.fill,
+            stroke: this.stroke,
+            strokeWidth: this.strokeWidth,
+            lineHeight: this.lineHeight,
             align: this.align,
             baseline: this.baseline,
             direction: this.direction,
+            padding: this.padding,
+            background: this.background,
+            cornerRadius: this.cornerRadius,
             writable: this.writable,
         };
     }
 
     /**
      * The widest line's advance width by the lines' full height, grown to fit
-     * letters that reach past them, such as italics.
+     * letters that reach past them, such as italics, then by the outline and padding.
      * @returns The box in the text's own space.
      */
     getLocalBounds(): Rect {
         const font = this._font();
-        const key = `${font}|${this.align}|${this.baseline}|${this.direction}|${this.width}|${this.text}`;
+        const outset = this._outset();
+        const key = `${font}|${this.align}|${this.baseline}|${this.direction}|${this.width}|${this.lineHeight}|${outset}|${this.text}`;
         if (key === this._boundsKey) {
             return this._bounds;
         }
@@ -126,8 +163,9 @@ export class McText extends McNode {
         context.direction = this.direction;
         this._lines = this.width === null ? this.text.split("\n") : this._wrap(context, this.width);
         const first = context.measureText(this._lines[0]);
-        this._lineHeight = first.fontBoundingBoxAscent + first.fontBoundingBoxDescent;
         this._ascent = first.fontBoundingBoxAscent;
+        this._descent = first.fontBoundingBoxDescent;
+        this._lineHeight = (this._ascent + this._descent) * this.lineHeight;
 
         let left = Infinity;
         let right = -Infinity;
@@ -139,18 +177,18 @@ export class McText extends McNode {
             const y = i * this._lineHeight;
             const width = metrics.width;
             widest = Math.max(widest, width);
-            let x = 0;
-            if (this.align === "center") {
-                x = -width / 2;
-            } else if (this.align === "right") {
-                x = -width;
-            }
+            const x = this._lineLeft(width);
             left = Math.min(left, x, -metrics.actualBoundingBoxLeft);
             right = Math.max(right, x + metrics.width, metrics.actualBoundingBoxRight);
             top = Math.min(top, y - Math.max(metrics.fontBoundingBoxAscent, metrics.actualBoundingBoxAscent));
             bottom = Math.max(bottom, y + Math.max(metrics.fontBoundingBoxDescent, metrics.actualBoundingBoxDescent));
         });
-        const bounds = { x: left, y: top, width: right - left, height: bottom - top };
+        const bounds = {
+            x: left - outset,
+            y: top - outset,
+            width: right - left + 2 * outset,
+            height: bottom - top + 2 * outset,
+        };
 
         this._widest = widest;
         this._bounds = bounds;
@@ -161,7 +199,7 @@ export class McText extends McNode {
 
     resize(anchor: Point, corner: Point): void {
         const fixed = this.localToBoard(anchor);
-        this.width = Math.abs(corner.x - anchor.x);
+        this.width = Math.max(0, Math.abs(corner.x - anchor.x) - 2 * this._outset());
         const bounds = this.getLocalBounds();
         const moved = this.localToBoard({
             x: anchor.x < corner.x ? bounds.x : bounds.x + bounds.width,
@@ -174,19 +212,19 @@ export class McText extends McNode {
     /**
      * @internal
      * Where Canvas puts the editor: the lines' box by their advance widths
-     * and the font's height, in the text's own space, and the font.
+     * and the line height, in the text's own space, and the font.
      */
     _editorLayout(): { box: Rect; font: string; lineHeight: number } {
         this.getLocalBounds();
         const width = this.width ?? this._widest;
-        let x = 0;
-        if (this.align === "center") {
-            x = -width / 2;
-        } else if (this.align === "right") {
-            x = -width;
-        }
+        const halfLeading = (this._lineHeight - this._ascent - this._descent) / 2;
         return {
-            box: { x, y: -this._ascent, width, height: this._lines.length * this._lineHeight },
+            box: {
+                x: this._lineLeft(width),
+                y: -this._ascent - halfLeading,
+                width,
+                height: this._lines.length * this._lineHeight,
+            },
             font: this._font(),
             lineHeight: this._lineHeight,
         };
@@ -194,18 +232,55 @@ export class McText extends McNode {
 
     protected draw(context: CanvasRenderingContext2D): void {
         // Lays out the lines again, if anything changed.
-        this.getLocalBounds();
+        const bounds = this.getLocalBounds();
+        if (this.background) {
+            context.beginPath();
+            context.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, this.cornerRadius);
+            context.fillStyle = this.background;
+            context.fill();
+        }
+        if (this._editing) {
+            return;
+        }
+
         context.font = `${DEFAULT_FONT_STYLE} ${DEFAULT_FONT_WEIGHT} ${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
         context.font = this._font();
         context.fillStyle = this.fill;
         context.textAlign = this.align;
         context.textBaseline = this.baseline;
         context.direction = this.direction;
-        this._lines.forEach((line, i) => context.fillText(line, 0, i * this._lineHeight));
+        const stroke = this.strokeWidth > 0 ? this.stroke : null;
+        if (stroke) {
+            context.strokeStyle = stroke;
+            context.lineWidth = this.strokeWidth;
+            // Miter corners would pass the bounds.
+            context.lineJoin = "round";
+        }
+        this._lines.forEach((line, i) => {
+            const y = i * this._lineHeight;
+            context.fillText(line, 0, y);
+            if (stroke) {
+                context.strokeText(line, 0, y);
+            }
+        });
     }
 
     private _font(): string {
         return `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
+    }
+
+    private _outset(): number {
+        return this.padding + (this.stroke ? this.strokeWidth / 2 : 0);
+    }
+
+    private _lineLeft(width: number): number {
+        if (this.align === "center") {
+            return -width / 2;
+        }
+        if (this.align === "right") {
+            return -width;
+        }
+        return 0;
     }
 
     // Breaks the text at \n, then at the last space that keeps each line within width.

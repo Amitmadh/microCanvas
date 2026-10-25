@@ -224,8 +224,7 @@ export class Canvas {
         this.context.scale(this.zoom, this.zoom);
         for (const node of this._sortedNodes()) {
             try {
-                // The text being edited shows in its editor instead and culling.
-                if (node !== this._editor?.node && rectsOverlap(this._boardRect(node), view)) {
+                if (rectsOverlap(this._boardRect(node), view)) {
                     node.render(this.context);
                 }
             } catch (error) {

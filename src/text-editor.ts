@@ -18,6 +18,7 @@ export class TextEditor {
         this._canvas = canvas;
         this.node = node;
         this._before = node.text;
+        node._editing = true;
 
         const textarea = this._textarea;
         textarea.value = node.text;
@@ -73,7 +74,7 @@ export class TextEditor {
             font,
             lineHeight: `${lineHeight}px`,
             color: node.fill,
-            opacity: String(node.opacity),
+            webkitTextStroke: node.stroke ? `${node.strokeWidth}px ${node.stroke}` : "",            opacity: String(node.opacity),
             textAlign: node.align,
             direction: node.direction,
             whiteSpace: node.width === null ? "pre" : "pre-wrap",
@@ -87,6 +88,7 @@ export class TextEditor {
      */
     close(): void {
         this._textarea.remove();
+        this.node._editing = false;
         if (this.node.text !== this._before) {
             this._canvas.onChange?.(this.node);
         }

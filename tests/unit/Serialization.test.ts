@@ -24,6 +24,8 @@ async function addBoard(): Promise<Canvas> {
         new McText({
             id: "text", text: "שלום עולם", width: 100, x: 400, y: 60, fontSize: 30, fontFamily: "serif", fontWeight: 700,
             fontStyle: "italic", fill: "slateblue", align: "center", baseline: "top", direction: "rtl", writable: true,
+            stroke: "white", strokeWidth: 2, lineHeight: 1.4, padding: 6,
+            background: "lavender", cornerRadius: 4,
         }),
         await McImage.load(redImageURL(), { id: "image", x: 480, y: 120, width: 80, height: 40 }),
         new Rectangle({ id: "hidden", x: 0, y: 0, width: 10, height: 10, visible: false }),

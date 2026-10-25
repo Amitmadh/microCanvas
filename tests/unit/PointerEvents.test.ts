@@ -391,4 +391,23 @@ describe("Pointer events", () => {
         expect(editor.right - board.left).toBeGreaterThanOrEqual(bottomRight.x);
         expect(editor.bottom - board.top).toBeGreaterThanOrEqual(bottomRight.y);
     });
+
+    // ======================================================
+    it("keeps drawing a text's background while it's edited, but not its letters", () => {
+        const canvas = addCanvas();
+        canvas.add(new McText({ text: "Note", x: 100, y: 60, fontSize: 20, padding: 10, background: "red", writable: true }));
+
+        simulateDoubleClick(canvas, { x: 110, y: 55 });
+        canvas.render();
+
+        const { data } = canvas.context.getImageData(0, 0, canvas.canvas.width, canvas.canvas.height);
+        const opaque: number[][] = [];
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] === 255) {
+                opaque.push([data[i], data[i + 1], data[i + 2]]);
+            }
+        }
+        expect(opaque.length).toBeGreaterThan(0);
+        expect(opaque.every(([r, g, b]) => r === 255 && g === 0 && b === 0)).toBe(true);
+    });
 });
