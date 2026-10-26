@@ -13,11 +13,13 @@ export class TextEditor {
     private readonly _canvas: Canvas;
     private readonly _textarea = document.createElement("textarea");
     private readonly _before: string;
+    private _shown: string;
 
     constructor(canvas: Canvas, node: McText, onClose: () => void) {
         this._canvas = canvas;
         this.node = node;
         this._before = node.text;
+        this._shown = node.text;
         node._editing = true;
 
         const textarea = this._textarea;
@@ -34,7 +36,7 @@ export class TextEditor {
             transformOrigin: "0 0",
         });
         textarea.addEventListener("input", () => {
-            node.text = textarea.value;
+            this._applyEdit();
             canvas.whileChange?.(node);
             canvas.requestRender();
         });
@@ -52,11 +54,18 @@ export class TextEditor {
     }
 
     /**
-     * Lays the textarea over the text, with its font, rotation and scale and
-     * the canvas's pan and zoom.
+     * Lays the textarea over the text, with its text, font, rotation and scale
+     * and the canvas's pan and zoom.
      */
     place(): void {
-        const { node, _canvas: canvas } = this;
+        const { node, _canvas: canvas, _textarea: textarea } = this;
+        if (textarea.value !== node.text) {
+            // Setting the value moves the caret to the end.
+            const { selectionStart, selectionEnd } = textarea;
+            textarea.setSelectionRange(selectionStart, selectionEnd);
+            textarea.value = node.text;
+            this._shown = node.text;
+        }
         const { box, font, lineHeight } = node._editorLayout();
         // Room for the caret past either end of a line, and for a line more.
         const slack = node.fontSize;
@@ -65,7 +74,7 @@ export class TextEditor {
         const sin = Math.sin(node.rotation);
         const scaleX = canvas.zoom * node.scaleX;
         const scaleY = canvas.zoom * node.scaleY;
-        Object.assign(this._textarea.style, {
+        Object.assign(textarea.style, {
             left: `${canvas.canvas.offsetLeft + canvas.canvas.clientLeft}px`,
             top: `${canvas.canvas.offsetTop + canvas.canvas.clientTop}px`,
             width: `${box.width}px`,
@@ -93,5 +102,22 @@ export class TextEditor {
             this._canvas.onChange?.(this.node);
         }
         this._canvas.requestRender();
+    }
+
+    private _applyEdit(): void {
+        const before = this._shown;
+        const after = this._textarea.value;
+        let start = 0;
+        while (start < before.length && before[start] === after[start]) {
+            start++;
+        }
+        let end = 0;
+        while (end < before.length - start && end < after.length - start
+            && before[before.length - 1 - end] === after[after.length - 1 - end]) {
+            end++;
+        }
+        const text = this.node.text;
+        this.node.text = text.slice(0, start) + after.slice(start, after.length - end) + text.slice(before.length - end);
+        this._shown = after;
     }
 }
