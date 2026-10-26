@@ -183,6 +183,10 @@ export class McText extends McNode {
             top = Math.min(top, y - Math.max(metrics.fontBoundingBoxAscent, metrics.actualBoundingBoxAscent));
             bottom = Math.max(bottom, y + Math.max(metrics.fontBoundingBoxDescent, metrics.actualBoundingBoxDescent));
         });
+        if (this.width !== null) {
+            left = Math.min(left, this._lineLeft(this.width));
+            right = Math.max(right, this._lineLeft(this.width) + this.width);
+        }
         const bounds = {
             x: left - outset,
             y: top - outset,

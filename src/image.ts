@@ -1,3 +1,4 @@
+import { IMAGE_PLACEHOLDER_FILL } from "./config.js"
 import { McNode, type McNodeOptions } from "./node.js";
 import type { Point, Rect } from "./types.js";
 
@@ -68,20 +69,12 @@ export class McImage extends McNode {
     }
 
     protected draw(context: CanvasRenderingContext2D): void {
-        if (!this._isLoaded()) {
-            return;
-        }
+    if (this._isLoaded()) {
         context.drawImage(this.image, 0, 0, this.width, this.height);
+    } else {
+        context.fillStyle = IMAGE_PLACEHOLDER_FILL;
+        context.fillRect(0, 0, this.width, this.height);
     }
-
-    /**
-     * Hits anywhere in the box, transparent pixels included,
-     * once the image has loaded.
-     * @param point The point in the image's own space.
-     * @returns Whether the point is hit.
-     */
-    protected containsLocalPoint(point: Point): boolean {
-        return this._isLoaded() && super.containsLocalPoint(point);
     }
 
     private _isLoaded(): boolean {
