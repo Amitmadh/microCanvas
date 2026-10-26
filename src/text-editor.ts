@@ -60,10 +60,10 @@ export class TextEditor {
     place(): void {
         const { node, _canvas: canvas, _textarea: textarea } = this;
         if (textarea.value !== node.text) {
-            // Setting the value moves the caret to the end.
+            // Setting the value moves the caret to the end, so it's put back after.
             const { selectionStart, selectionEnd } = textarea;
-            textarea.setSelectionRange(selectionStart, selectionEnd);
             textarea.value = node.text;
+            textarea.setSelectionRange(selectionStart, selectionEnd);
             this._shown = node.text;
         }
         const { box, font, lineHeight } = node._editorLayout();
