@@ -196,8 +196,9 @@ export class McText extends McNode {
 
         this._widest = widest;
         this._bounds = bounds;
-        // Until a web font loads, the text is measured in a fallback font.
-        this._boundsKey = this._fontLoaded(font, this.text) ? key : "";
+
+        // While a web font loads, the text is measured in a fallback.
+        this._boundsKey = document.fonts.status === "loading" ? "" : key;
         return bounds;
     }
 
@@ -304,13 +305,5 @@ export class McText extends McNode {
             lines.push(line ?? "");
         }
         return lines;
-    }
-
-    private _fontLoaded(font: string, text: string): boolean {
-        try {
-            return document.fonts.check(font, text);
-        } catch {
-            return true;
-        }
     }
 }
