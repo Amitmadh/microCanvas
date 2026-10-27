@@ -38,7 +38,8 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "tsc -p tests && vitest run --browser.headless"
+    "test": "tsc -p tests && vitest run --browser.headless",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/seedrandom": "^3.0.8",
@@ -46,5 +47,8 @@
     "seedrandom": "^3.0.5",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "microcanvas": "github:Amitmadh/microCanvas#v1.0.0"
   }
 }
