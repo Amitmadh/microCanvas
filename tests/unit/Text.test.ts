@@ -151,12 +151,13 @@ describe("McText", () => {
 
         const box = text.getLocalBounds();
         expect(box.height / line.height).toBeCloseTo(4, 6);
-        expect(box.width).toBeCloseTo(line.width, 0);
-        // The ink reaches into the fourth line, and stays in the box.
+        // The box is the width it wraps to, however short its lines.
+        expect(box.width).toBeCloseTo(2 * line.width, 0);
+        // The ink reaches into the fourth line, and no line is wider than a word.
         const ink = inkBox(canvas);
         expect(ink.bottom).toBeGreaterThan(text.y + box.y + 3 * line.height);
         expect(ink.bottom).toBeLessThanOrEqual(text.y + box.y + box.height + 1);
-        expect(ink.right).toBeLessThanOrEqual(text.x + box.x + box.width + 1);
+        expect(ink.right).toBeLessThanOrEqual(text.x + box.x + line.width + 1);
         // Without a width, \n still breaks the line.
         expect(new McText({ ...mono, text: "aaa\nddd" }).getLocalBounds().height).toBeCloseTo(2 * line.height, 6);
     });
@@ -175,7 +176,9 @@ describe("McText", () => {
         const after = text.getLocalBounds();
         expect(text.fontSize).toBe(20);
         expect(text.width).toBeCloseTo(11.5 * letter, 9);
-        expect(after).toEqual(new McText({ ...mono, text: "aa bb cc dd" }).getLocalBounds());
+        // On one line now, in a box as wide as it was resized to.
+        expect(after.height).toBe(new McText({ ...mono, text: "aa bb cc dd" }).getLocalBounds().height);
+        expect(after.width).toBeCloseTo(11.5 * letter, 9);
         // The top-left corner stays in place.
         expect(text.x + after.x).toBeCloseTo(before.x, 9);
         expect(text.y + after.y).toBeCloseTo(before.y, 9);
@@ -193,7 +196,9 @@ describe("McText", () => {
 
         const after = text.getLocalBounds();
         expect(text.width).toBeCloseTo(11.5 * letter, 9);
-        expect(after).toEqual(new McText({ ...mono, text: "aa bb cc dd" }).getLocalBounds());
+        // On one line now, with the padding on both sides of its width.
+        expect(after.height).toBe(new McText({ ...mono, text: "aa bb cc dd" }).getLocalBounds().height);
+        expect(after.width).toBeCloseTo(11.5 * letter + 16, 9);
         expect(text.x + after.x).toBeCloseTo(before.x, 9);
         expect(text.y + after.y).toBeCloseTo(before.y, 9);
     });
