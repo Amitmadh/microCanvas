@@ -50,7 +50,6 @@ export interface McTextJSON extends Required<McTextOptions> {
  * break at \n, and wrap at spaces given a width, and stack below the first.
  */
 export class McText extends McNode {
-    text: string;
     width: number | null;
     fontSize: number;
     fontFamily: string;
@@ -76,6 +75,7 @@ export class McText extends McNode {
     private _ascent = 0;
     private _descent = 0;
     private _widest = 0;
+    private _text = "";
 
     constructor({
         text,
@@ -115,6 +115,15 @@ export class McText extends McNode {
         this.background = background;
         this.cornerRadius = cornerRadius;
         this.writable = writable;
+    }
+
+    /** Its line breaks are kept as \n, as a textarea reports them. */
+    get text(): string {
+        return this._text;
+    }
+
+    set text(text: string) {
+        this._text = text.replace(/\r\n?/g, "\n");
     }
 
     toJSON(): McTextJSON {
@@ -217,9 +226,10 @@ export class McText extends McNode {
     /**
      * @internal
      * Where Canvas puts the editor: the lines' box by their advance widths
-     * and the line height, in the text's own space, and the font.
+     * and the line height, in the text's own space, the font, and how far
+     * a word longer than the width passes it.
      */
-    _editorLayout(): { box: Rect; font: string; lineHeight: number } {
+    _editorLayout(): { box: Rect; font: string; lineHeight: number; overflow: number } {
         this.getLocalBounds();
         const width = this.width ?? this._widest;
         const halfLeading = (this._lineHeight - this._ascent - this._descent) / 2;
@@ -232,6 +242,7 @@ export class McText extends McNode {
             },
             font: this._font(),
             lineHeight: this._lineHeight,
+            overflow: Math.max(0, this._widest - width),
         };
     }
 
@@ -288,7 +299,8 @@ export class McText extends McNode {
         return 0;
     }
 
-    // Breaks the text at \n, then at the last space that keeps each line within width.
+    // Breaks the text at \n, then after the last space or hyphen that keeps
+    // each line within width. A longer word overflows it.
     private _wrap(context: CanvasRenderingContext2D, width: number): string[] {
         const lines: string[] = [];
         for (const paragraph of this.text.split("\n")) {
