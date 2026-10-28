@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { Circle, McImage, McText, Rectangle, type Canvas, type CanvasJSON, type McNode } from "../../src/index.js";
 import { addCanvas } from "./test-utils.js";
 
@@ -50,8 +50,8 @@ describe("Serialization", () => {
         const loaded = addCanvas();
 
         loaded.fromJSON(JSON.parse(JSON.stringify(saved)));
-        // An image can be hit once it has loaded.
-        await vi.waitFor(() => expect(loaded.nodeAt({ x: 520, y: 140 })).toBeInstanceOf(McImage));
+        // Its image is a placeholder until it decodes.
+        await (loaded.nodeAt({ x: 520, y: 140 }) as McImage).image.decode();
         saved.render();
         loaded.render();
 
