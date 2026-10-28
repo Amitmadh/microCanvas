@@ -13,6 +13,7 @@ import {
 } from "./config.js";
 import { McImage, type McImageJSON } from "./image.js";
 import type { McNode } from "./node.js";
+import { Arrow, Cursor, Diamond, Hexagon, Star, Triangle, type PolygonJSON } from "./polygon.js";
 import { Rectangle, type RectangleJSON } from "./rectangle.js";
 import { Shape } from "./shape.js";
 import { TextEditor } from "./text-editor.js";
@@ -26,7 +27,7 @@ export interface CanvasOptions {
     background?: Paint | null;
 }
 
-export type McNodeJSON = RectangleJSON | CircleJSON | McTextJSON | McImageJSON;
+export type McNodeJSON = RectangleJSON | CircleJSON | PolygonJSON | McTextJSON | McImageJSON;
 
 export interface CanvasJSON {
     background: Paint | null;
@@ -683,6 +684,18 @@ function nodeFromJSON(json: McNodeJSON): McNode | null {
             return new Rectangle(json);
         case "circle":
             return new Circle(json);
+        case "triangle":
+            return new Triangle(json);
+        case "diamond":
+            return new Diamond(json);
+        case "hexagon":
+            return new Hexagon(json);
+        case "star":
+            return new Star(json);
+        case "arrow":
+            return new Arrow(json);
+        case "cursor":
+            return new Cursor(json);
         case "text":
             return new McText(json);
         case "image": {

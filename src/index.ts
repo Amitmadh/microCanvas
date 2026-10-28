@@ -8,6 +8,8 @@ export { Rectangle } from "./rectangle.js";
 export type { RectangleJSON, RectangleOptions } from "./rectangle.js";
 export { Circle } from "./circle.js";
 export type { CircleJSON, CircleOptions } from "./circle.js";
+export { Arrow, Cursor, Diamond, Hexagon, Polygon, Star, Triangle } from "./polygon.js";
+export type { PolygonJSON, PolygonOptions } from "./polygon.js";
 export type { Paint, Point, Rect } from "./types.js";
 export { McText } from "./text.js";
 export type { McTextJSON, McTextOptions } from "./text.js";
