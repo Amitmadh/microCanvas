@@ -67,10 +67,12 @@ export class TextEditor {
             textarea.setSelectionRange(start, end);
             this._shown = node.text;
         }
-        const { box, font, lineHeight } = node._editorLayout();
+        const { box, font, lineHeight, overflow } = node._editorLayout();
         // Room for the caret past either end of a line, and for a line more.
         const slack = node.fontSize;
-        const origin = canvas.boardToScreen(node.localToBoard({ x: box.x - slack, y: box.y }));
+        // A word longer than the width passes the line's end, as in CSS.
+        const [left, right] = node.direction === "rtl" ? [slack + overflow, slack] : [slack, slack + overflow];
+        const origin = canvas.boardToScreen(node.localToBoard({ x: box.x - left, y: box.y }));
         const cos = Math.cos(node.rotation);
         const sin = Math.sin(node.rotation);
         const scaleX = canvas.zoom * node.scaleX;
@@ -80,11 +82,12 @@ export class TextEditor {
             top: `${canvas.canvas.offsetTop + canvas.canvas.clientTop}px`,
             width: `${box.width}px`,
             height: `${box.height + lineHeight}px`,
-            padding: `0 ${slack}px`,
+            padding: `0 ${right}px 0 ${left}px`,
             font,
             lineHeight: `${lineHeight}px`,
             color: node.fill,
-            webkitTextStroke: node.stroke ? `${node.strokeWidth}px ${node.stroke}` : "",            opacity: String(node.opacity),
+            webkitTextStroke: node.stroke ? `${node.strokeWidth}px ${node.stroke}` : "",
+            opacity: String(node.opacity),
             textAlign: node.align,
             direction: node.direction,
             whiteSpace: node.width === null ? "pre" : "pre-wrap",
