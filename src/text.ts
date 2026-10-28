@@ -292,17 +292,15 @@ export class McText extends McNode {
     private _wrap(context: CanvasRenderingContext2D, width: number): string[] {
         const lines: string[] = [];
         for (const paragraph of this.text.split("\n")) {
-            let line: string | null = null;
-            for (const word of paragraph.split(" ")) {
-                const longer: string = line === null ? word : `${line} ${word}`;
-                if (line !== null && context.measureText(longer).width > width) {
-                    lines.push(line);
-                    line = word;
-                } else {
-                    line = longer;
+            let line = "";
+            for (const word of paragraph.split(/(?<=[ -])/)) {
+                if (line && context.measureText((line + word).trimEnd()).width > width) {
+                    lines.push(line.trimEnd());
+                    line = "";
                 }
+                line += word;
             }
-            lines.push(line ?? "");
+            lines.push(line.trimEnd());
         }
         return lines;
     }

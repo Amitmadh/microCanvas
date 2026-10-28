@@ -34,6 +34,7 @@ export class TextEditor {
             overflow: "hidden",
             boxSizing: "content-box",
             transformOrigin: "0 0",
+            overflowWrap: "normal",
         });
         textarea.addEventListener("input", () => {
             this._applyEdit();
@@ -61,9 +62,9 @@ export class TextEditor {
         const { node, _canvas: canvas, _textarea: textarea } = this;
         if (textarea.value !== node.text) {
             // Setting the value moves the caret to the end, so it's put back after.
-            const { selectionStart, selectionEnd } = textarea;
+            const [start, end] = this._moveRange(textarea.selectionStart, textarea.selectionEnd, textarea.value, node.text);
             textarea.value = node.text;
-            textarea.setSelectionRange(selectionStart, selectionEnd);
+            textarea.setSelectionRange(start, end);
             this._shown = node.text;
         }
         const { box, font, lineHeight } = node._editorLayout();
@@ -107,17 +108,38 @@ export class TextEditor {
     private _applyEdit(): void {
         const before = this._shown;
         const after = this._textarea.value;
+        const [start, end] = this._commonEnds(before, after);
+        // The text may have changed since it was shown.
+        const text = this.node.text;
+        const [from, to] = this._moveRange(start, before.length - end, before, text);
+        this.node.text = text.slice(0, from) + after.slice(start, after.length - end) + text.slice(Math.max(from, to));
+        this._shown = after;
+    }
+
+    private _commonEnds(a: string, b: string): [number, number] {
         let start = 0;
-        while (start < before.length && before[start] === after[start]) {
+        while (start < a.length && start < b.length && a[start] === b[start]) {
             start++;
         }
         let end = 0;
-        while (end < before.length - start && end < after.length - start
-            && before[before.length - 1 - end] === after[after.length - 1 - end]) {
+        while (end < a.length - start && end < b.length - start
+            && a[a.length - 1 - end] === b[b.length - 1 - end]) {
             end++;
         }
-        const text = this.node.text;
-        this.node.text = text.slice(0, start) + after.slice(start, after.length - end) + text.slice(before.length - end);
-        this._shown = after;
+        return [start, end];
+    }
+
+    private _moveRange(from: number, to: number, before: string, after: string): [number, number] {
+        const [start, end] = this._commonEnds(before, after);
+        const move = (index: number): number => {
+            if (index <= start) {
+                return index;
+            }
+            if (index >= before.length - end) {
+                return index + after.length - before.length;
+            }
+            return after.length - end;
+        };
+        return [move(from), move(to)];
     }
 }
