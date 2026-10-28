@@ -15,6 +15,11 @@ async function loadingRedImage(): Promise<HTMLImageElement> {
     return element;
 }
 
+// McImage redraws on load, which decode() can resolve before.
+function loaded(element: HTMLImageElement): Promise<unknown> {
+    return new Promise((resolve) => element.addEventListener("load", resolve, { once: true }));
+}
+
 describe("McImage", () => {
     // ======================================================
     it("is drawn once it loads, with nothing else rendering the board", async () => {
@@ -25,7 +30,7 @@ describe("McImage", () => {
         const canvas = addCanvas();
         canvas.add(new McImage({ image: element, x: 10, y: 10, width: 100, height: 100 }));
         canvas.render();
-        await element.decode();
+        await loaded(element);
         await nextFrame();
 
         const ratio = canvas.pixelRatio;
@@ -43,7 +48,7 @@ describe("McImage", () => {
         sized.width = 50;
         canvas.add(natural, sized);
 
-        await element.decode();
+        await loaded(element);
         await nextFrame();
 
         expect([natural.width, natural.height, sized.width, sized.height]).toEqual([20, 20, 50, 20]);

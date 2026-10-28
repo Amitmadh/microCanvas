@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh run *)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)"
+    ]
+  }
+}
