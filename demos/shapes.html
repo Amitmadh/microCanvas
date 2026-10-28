@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+    Visual test for the polygon shapes. Run `npm run build` first, then open
+    this page through a local server (e.g. `npx serve .` and go to
+    /demos/shapes.html). Browsers block module imports on file:// pages.
+
+    Each case is outlined by its bounds. Press a case and drag a corner to
+    resize it.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shapes test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <script type="module">
+        import { Arrow, Canvas, Cursor, Diamond, Hexagon, McText, Star, Triangle } from "../dist/index.js";
+
+        const canvas = new Canvas(document.querySelector("canvas"));
+
+        const cases = [
+            ["Triangle", new Triangle({ x: 40, y: 60, width: 120, height: 100, fill: "tomato" })],
+            ["Diamond", new Diamond({ x: 240, y: 60, width: 120, height: 100, fill: "gold" })],
+            ["Hexagon", new Hexagon({ x: 440, y: 60, width: 120, height: 104, fill: "mediumseagreen" })],
+            ["Star", new Star({ x: 640, y: 60, width: 105, height: 100, fill: "orange" })],
+
+            ["Arrow", new Arrow({ x: 40, y: 260, width: 140, height: 80, fill: "royalblue" })],
+            ["Cursor", new Cursor({ x: 240, y: 260, width: 52, height: 82, fill: "crimson", stroke: "white", strokeWidth: 4 })],
+            ["Stroke only, round corners", new Star({
+                x: 440, y: 260, width: 105, height: 100, fill: null, stroke: "black", strokeWidth: 12,
+            })],
+            ["Fill + stroke", new Triangle({
+                x: 640, y: 260, width: 120, height: 100, fill: "lavender", stroke: "slateblue", strokeWidth: 6,
+            })],
+
+            ["Rotated 30°", new Arrow({ x: 60, y: 460, width: 140, height: 80, fill: "teal", rotation: Math.PI / 6 })],
+            ["Scaled 1.5×", new Diamond({
+                x: 240, y: 460, width: 80, height: 70, fill: "orange", stroke: "black", strokeWidth: 2, scaleX: 1.5, scaleY: 1.5,
+            })],
+            ["Negative width", new Arrow({ x: 580, y: 460, width: -140, height: 80, fill: "purple" })],
+            ["Opacity 0.5", new Hexagon({ x: 640, y: 460, width: 120, height: 104, fill: "purple", opacity: 0.5 })],
+        ];
+
+        for (const [text, shape] of cases) {
+            shape.draggable = true;
+            shape.resizable = true;
+            const { x } = shape.getLocalBounds();
+            canvas.add(new McText({ text, x: shape.x + x, y: shape.y - 12 }), shape);
+        }
+
+        canvas.drawOverlay = () => {
+            for (const [, shape] of cases) {
+                canvas.drawOutline(shape, "deepskyblue");
+            }
+        };
+
+        canvas.render();
+    </script>
+</body>
+</html>

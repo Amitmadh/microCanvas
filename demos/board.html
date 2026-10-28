@@ -1,0 +1,120 @@
+<!doctype html>
+<!--
+    A small shared board, as in the README's screenshots. Run `npm run build`
+    first, then open this page through a local server (e.g. `npx serve .` and
+    go to /demos/board.html). Browsers block module imports on file:// pages.
+
+    Drag the notes, the photo and the dots, resize them by a corner of the
+    selection, and double-click a note to edit it. Pinch or Ctrl+wheel to
+    zoom, and scroll or drag empty space to pan. Dana's selection and pointer
+    stand in for a collaborator's, drawn by drawOverlay.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Board demo</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #f4f5f7;
+        }
+        #zoom {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            padding: 4px 12px;
+            border: 1px solid #e2e4e9;
+            border-radius: 999px;
+            background: white;
+            color: #374151;
+            font: 13px Inter, "Segoe UI", system-ui, sans-serif;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <div id="zoom">100%</div>
+    <script type="module">
+        import { Canvas, Circle, Cursor, McImage, McText, Rectangle } from "../dist/index.js";
+
+        const font = "Inter, 'Segoe UI', system-ui, sans-serif";
+        const canvas = new Canvas(document.querySelector("canvas"), { background: "#f4f5f7" });
+        canvas.selectionColor = "#2563eb";
+
+        // A sticky note whose box has its top-left corner at left, top.
+        function note(text, left, top, background, options = {}) {
+            const { width = 168, align = "left" } = options;
+            return new McText({
+                text, x: left + 16 + (align === "right" ? width : 0), y: top + 16, width, padding: 16, background,
+                cornerRadius: 10, fontSize: 17, fontFamily: font, fill: "#1f2937", lineHeight: 1.2, baseline: "top",
+                draggable: true, resizable: true, writable: true, ...options,
+            });
+        }
+
+        // A white panel behind a group of notes, with its title above it.
+        function frame(title, left, top, width, height) {
+            return [
+                new Rectangle({ x: left, y: top, width, height, fill: "white", stroke: "#e2e4e9", strokeWidth: 1.5, layer: -1 }),
+                new McText({ text: title, x: left, y: top - 28, fontSize: 15, fontWeight: 600, fontFamily: font, fill: "#6b7280", baseline: "top" }),
+            ];
+        }
+
+        // A vote on a note.
+        function dot(x, y, fill) {
+            return new Circle({ x, y, radius: 9, fill, stroke: "white", strokeWidth: 2, draggable: true });
+        }
+
+        const url = "assets/clickerhappy-beach-front-5819728_1920.jpg";
+        const photo = await McImage.load(url, { x: 528, y: 108, width: 256, height: 171, rotation: 0.04, draggable: true, resizable: true });
+        const speaker = note("Bring a speaker for music", 268, 412, "#ffe2c6");
+
+        canvas.add(
+            new McText({ text: "Team offsite", x: 32, y: 28, fontSize: 28, fontWeight: 700, fontFamily: font, fill: "#111827", baseline: "top" }),
+
+            ...frame("Ideas", 24, 100, 464, 240),
+            note("Book the venue by Friday", 44, 120, "#fff1a8"),
+            dot(222, 178, "#2563eb"), dot(200, 178, "#e11d48"), dot(178, 178, "#16a34a"),
+            note("Ask everyone about food allergies", 268, 124, "#ffd6e0", { rotation: -0.05 }),
+            note("Two short talks, then a long hike", 44, 220, "#d3f2d8"),
+            note("Agenda: talks in the morning, beach after lunch", 268, 220, "#d6e8ff"),
+
+            ...frame("Logistics", 24, 392, 464, 116),
+            note("להזמין אוטובוס לכולם", 44, 412, "#e9ddff", { align: "right", direction: "rtl" }),
+            speaker,
+
+            photo,
+            note("Last year's beach", 596, 254, "white", { width: 150, rotation: -0.03 }),
+            note("Packing list\n• Sunscreen\n• Hiking shoes\n• Laptop", 556, 340, "#fff1a8"),
+        );
+
+        // A collaborator's selection and pointer, as a board would draw them from shared state.
+        const dana = "#e11d48";
+        const pointer = new Cursor({ width: 13, height: 20.5, fill: dana, stroke: "white", strokeWidth: 1.5 });
+        const zoom = document.querySelector("#zoom");
+        canvas.drawOverlay = (context) => {
+            canvas.drawOutline(speaker, dana);
+            const bounds = speaker.getLocalBounds();
+            const { x, y } = canvas.boardToScreen(speaker.localToBoard({ x: bounds.x + bounds.width * 0.7, y: bounds.y + bounds.height * 0.75 }));
+            context.translate(x, y);
+            pointer.render(context);
+            context.fillStyle = dana;
+            context.font = `600 12px ${font}`;
+            context.beginPath();
+            context.roundRect(10, 22, context.measureText("Dana").width + 16, 20, 10);
+            context.fill();
+            context.fillStyle = "white";
+            context.textBaseline = "middle";
+            context.fillText("Dana", 18, 32.5);
+
+            // The zoom, kept up to date as every render ends here.
+            zoom.textContent = `${Math.round(canvas.zoom * 100)}%`;
+        };
+
+        canvas.render();
+    </script>
+</body>
+</html>

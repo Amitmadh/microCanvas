@@ -2,10 +2,10 @@
 
 A small TypeScript library for interactive canvas boards: shapes, text and images, with selecting, dragging, panning and zooming built in.
 
-<!-- Screenshots of demos/viewport.html -->
+<!-- Screenshots of demos/board.html -->
 <p>
-  <img src="demos/screenshots/viewport-1.png" width="49%" alt="Viewport demo">
-  <img src="demos/screenshots/viewport-2.png" width="49%" alt="Viewport demo, zoomed out">
+  <img src="demos/screenshots/board.png" width="49%" alt="A board of notes, a photo and votes, with a note being edited and a collaborator's selection and pointer">
+  <img src="demos/screenshots/board-zoomed-out.png" width="49%" alt="The same board, zoomed out">
 </p>
 
 ## Usage
@@ -31,21 +31,21 @@ canvas.render();
 - After changing anything in code, call `render()`, or `requestRender()` to draw once on the next frame.
 - Every node has `id`, `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity`, `visible`, `layer`, `selectable`, `draggable` and `resizable`.
 - Higher layers draw on top. Within a layer, nodes draw by `id`, so every board stacks them alike, and a new node can land under older ones: `canvas.bringToFront(node)` puts it on top.
-- `McText` lines break at `\n`, and given a `width` they also wrap to it at spaces. Resizing it by a corner sets the width, and the font stays.
+- `Triangle`, `Diamond`, `Hexagon`, `Star`, `Arrow` and `Cursor` take a `width` and `height` like a `Rectangle`, and stretch to fill that box. Their strokes have round corners.
+- `McText` lines break at `\n`, and given a `width` they also wrap to it at spaces and after hyphens, as a textarea does. A word longer than the width overflows it, and the box spans the width. Resizing it by a corner sets the width, and the font stays.
 - `McText` styles: `padding` goes around the lines, outside the `width`, and `background` fills it, rounded by `cornerRadius`. `lineHeight` is times the font's height, and `stroke` and `strokeWidth` outline the letters.
 - A `writable` text is edited in place by double-clicking it. Enter adds a line; Escape or a press elsewhere ends it, and `onChange` reports the edited node.
 - `drawOverlay` draws on top of each render, such as more outlines with `drawOutline(node, color)`.
 - `JSON.stringify(canvas)` saves the background and nodes, images by their URL. `canvas.fromJSON(JSON.parse(saved))` replaces them with the saved ones.
+- An `McImage` draws a grey box until its file loads, or if it fails to, and stays selectable.
 - To fill a parent, give the canvas a wrapper of its own, with no padding and nothing else inside.
 
 ## Install
 
-Not on npm yet. Build it, then install it into your app from its folder:
+Install it from a GitHub tag, which builds it on install:
 
 ```sh
-npm install
-npm run build
-npm install path/to/microCanvas   # in your app
+npm install github:Amitmadh/microCanvas#v1.1.0
 ```
 
 ## Development
