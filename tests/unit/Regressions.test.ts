@@ -127,8 +127,30 @@ describe("Regressions", () => {
         const text = new McText({ text: "Supercalifragilistic word", x: 100, y: 120, fontSize: 16, width: 100, writable: true });
         canvas.add(text);
         at(canvas, "dblclick", 110, 110);
+        const editor = editorOf(canvas)!;
 
         expect(text["_lines"]).toEqual(["Supercalifragilistic", "word"]);
-        expect(getComputedStyle(editorOf(canvas)!).overflowWrap).toBe("normal");
+        expect(getComputedStyle(editor).overflowWrap).toBe("normal");
+        // The editor reaches past the word, so none of it is cut off.
+        const bounds = text.getLocalBounds();
+        const wordEnd = canvas.canvas.getBoundingClientRect().left + canvas.boardToScreen(text.localToBoard({ x: bounds.x + bounds.width, y: 0 })).x;
+        expect(editor.getBoundingClientRect().right).toBeGreaterThanOrEqual(wordEnd);
+    });
+
+    // ======================================================
+    it("keeps the caret in place when a note's text has Windows line breaks", () => {
+        const canvas = addCanvas();
+        const text = new McText({ text: "one\ntwo", x: 100, y: 120, fontSize: 20, width: 200, writable: true });
+        canvas.add(text);
+        at(canvas, "dblclick", 110, 110);
+        const editor = editorOf(canvas)!;
+        editor.setSelectionRange(5, 5);
+
+        // As text pasted on Windows arrives.
+        text.text = "one\r\ntwo";
+        canvas.render();
+        canvas.render();
+
+        expect(editor.selectionStart).toBe(5);
     });
 });

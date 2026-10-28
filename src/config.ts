@@ -19,7 +19,7 @@ export const DEFAULT_TEXT_ALIGN = "left";
 export const DEFAULT_TEXT_BASELINE = "alphabetic";
 export const DEFAULT_TEXT_DIRECTION = "ltr";
 
-export const IMAGE_PLACEHOLDER_FILL = "rgba(0, 0, 0, 0.25)"
+export const IMAGE_PLACEHOLDER_FILL = "rgba(0, 0, 0, 0.25)";
 
 export const MIN_ZOOM = 0.1;
 export const MAX_ZOOM = 10;

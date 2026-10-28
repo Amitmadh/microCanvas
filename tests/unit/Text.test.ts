@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { McText, type Canvas } from "../../src/index.js";
 import { addCanvas, addContainer, nextFrame } from "./test-utils.js";
 
@@ -103,6 +103,26 @@ describe("McText", () => {
         await nextFrame();
 
         expect(inkBox(canvas).right).not.toBe(fallbackInk.right);
+    });
+
+    // ======================================================
+    it("keeps its layout once its web font has failed to load", async () => {
+        // As when offline, blocked, or misspelled.
+        const font = new FontFace("MissingFont", "url(/no-such-font.woff2)");
+        document.fonts.add(font);
+        onTestFinished(() => {
+            document.fonts.delete(font);
+        });
+        await font.load().catch(() => {});
+        await document.fonts.ready;
+        const text = new McText({ text: "Group Board notes", width: 100, fontFamily: "MissingFont, monospace" });
+        text.getLocalBounds();
+
+        const measure = vi.spyOn(CanvasRenderingContext2D.prototype, "measureText");
+        onTestFinished(() => measure.mockRestore());
+        text.getLocalBounds();
+
+        expect(measure).not.toHaveBeenCalled();
     });
 
     // ======================================================

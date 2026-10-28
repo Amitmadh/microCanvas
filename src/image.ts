@@ -1,4 +1,4 @@
-import { IMAGE_PLACEHOLDER_FILL } from "./config.js"
+import { IMAGE_PLACEHOLDER_FILL } from "./config.js";
 import { McNode, type McNodeOptions } from "./node.js";
 import type { Point, Rect } from "./types.js";
 
@@ -28,7 +28,7 @@ export class McImage extends McNode {
         this.image = image;
         this.width = width;
         this.height = height;
-        
+
         if (!this._isLoaded()) {
             this.image.addEventListener("load", () => {
                 // Sizes left at 0 take the natural ones, known now.
@@ -69,12 +69,12 @@ export class McImage extends McNode {
     }
 
     protected draw(context: CanvasRenderingContext2D): void {
-    if (this._isLoaded()) {
-        context.drawImage(this.image, 0, 0, this.width, this.height);
-    } else {
-        context.fillStyle = IMAGE_PLACEHOLDER_FILL;
-        context.fillRect(0, 0, this.width, this.height);
-    }
+        if (this._isLoaded()) {
+            context.drawImage(this.image, 0, 0, this.width, this.height);
+        } else {
+            context.fillStyle = IMAGE_PLACEHOLDER_FILL;
+            context.fillRect(0, 0, this.width, this.height);
+        }
     }
 
     private _isLoaded(): boolean {
