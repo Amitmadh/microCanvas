@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { Circle, McImage, McText, Rectangle, type Canvas, type CanvasJSON, type McNode } from "../../src/index.js";
+import {
+    Arrow, Circle, Cursor, Diamond, Hexagon, McImage, McText, Rectangle, Star, Triangle,
+    type Canvas, type CanvasJSON, type McNode,
+} from "../../src/index.js";
 import { addCanvas } from "./test-utils.js";
 
 // A red 20 × 20 picture.
@@ -21,6 +24,10 @@ async function addBoard(): Promise<Canvas> {
             fill: null, stroke: "navy", strokeWidth: 6, draggable: true, resizable: true,
         }),
         new Circle({ id: "circle", x: 250, y: 100, radius: 40, scaleY: 0.5, layer: -1, fill: "tomato", selectable: true }),
+        ...[Triangle, Diamond, Hexagon, Star, Arrow, Cursor].map((Polygon, i) => new Polygon({
+            id: `polygon ${i}`, x: 20 + 55 * i, y: 150, width: 40, height: -30, rotation: 0.2, fill: "gold",
+            stroke: "black", strokeWidth: 3, resizable: true,
+        })),
         new McText({
             id: "text", text: "שלום עולם", width: 100, x: 400, y: 60, fontSize: 30, fontFamily: "serif", fontWeight: 700,
             fontStyle: "italic", fill: "slateblue", align: "center", baseline: "top", direction: "rtl", writable: true,
