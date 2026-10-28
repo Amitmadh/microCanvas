@@ -95,11 +95,12 @@ export class TextEditor {
     /**
      * Removes the textarea, and calls the canvas's onChange if the text
      * changed.
+     * @param report False to skip onChange, as for a text that was removed.
      */
-    close(): void {
+    close(report = true): void {
         this._textarea.remove();
         this.node._editing = false;
-        if (this.node.text !== this._before) {
+        if (report && this.node.text !== this._before) {
             this._canvas.onChange?.(this.node);
         }
         this._canvas.requestRender();

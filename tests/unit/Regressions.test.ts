@@ -80,6 +80,23 @@ describe("Regressions", () => {
     });
 
     // ======================================================
+    it("doesn't report an edit to a text that's removed while it's edited", () => {
+        const canvas = addCanvas();
+        const text = new McText({ text: "Draft", x: 100, y: 120, fontSize: 20, writable: true });
+        canvas.add(text);
+        let changes = 0;
+        canvas.onChange = () => changes++;
+        at(canvas, "dblclick", 110, 110);
+        type(editorOf(canvas)!, "!");
+
+        // As when a collaborator deletes it.
+        canvas.remove(text);
+
+        expect(editorOf(canvas)).toBeNull();
+        expect(changes).toBe(0);
+    });
+
+    // ======================================================
     it("edits an empty note by double-clicking anywhere in its width", () => {
         const canvas = addCanvas();
         canvas.add(new McText({ text: "", x: 50, y: 80, width: 200, padding: 12, background: "gold", writable: true }));

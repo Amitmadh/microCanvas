@@ -153,7 +153,7 @@ export class Canvas {
                 node._canvas = null;
                 this._nodes.delete(node);
                 if (node === this._editor?.node) {
-                    this._stopEditing();
+                    this._stopEditing(false);
                 }
                 if (node === this.selected) {
                     this.selected = null;
@@ -520,10 +520,10 @@ export class Canvas {
         this.requestRender();
     }
 
-    private _stopEditing(): void {
+    private _stopEditing(report = true): void {
         const editor = this._editor;
         this._editor = null;
-        editor?.close();
+        editor?.close(report);
     }
 
     private _press(): Gesture {
