@@ -56,12 +56,12 @@
 
         canvas.onSelect = (node) => {
             status.text = `Selected: ${names.get(node) ?? "nothing"}`;
-            canvas.render();
+            canvas.requestRender();
         };
         canvas.onChange = (node) => {
             const { width, height } = node.getLocalBounds();
             status.text = `Changed: ${names.get(node)} at ${Math.round(node.x)}, ${Math.round(node.y)}, ${Math.round(width)} × ${Math.round(height)}`;
-            canvas.render();
+            canvas.requestRender();
         };
 
         canvas.render();
