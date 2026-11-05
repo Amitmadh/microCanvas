@@ -1,4 +1,4 @@
-export { Canvas } from "./canvas.js";
+export { Canvas, nodeFromJSON } from "./canvas.js";
 export type { CanvasJSON, CanvasOptions, McNodeJSON } from "./canvas.js";
 export { McNode } from "./node.js";
 export type { McNodeOptions } from "./node.js";

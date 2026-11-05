@@ -678,7 +678,11 @@ export class Canvas {
     }
 }
 
-function nodeFromJSON(json: McNodeJSON): McNode | null {
+/**
+ * @param json What a node's toJSON() returned.
+ * @returns The node, or null if its type is unknown.
+ */
+export function nodeFromJSON(json: McNodeJSON): McNode | null {
     switch (json.type) {
         case "rectangle":
             return new Rectangle(json);
