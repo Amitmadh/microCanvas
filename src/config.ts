@@ -8,6 +8,10 @@ export const RESIZE_HANDLE_SIZE = 8;
 export const RESIZE_HANDLE_FILL = "white";
 export const RESIZE_HANDLE_LINE_WIDTH = 1;
 
+export const OUTLINE_LABEL_FONT_SIZE = 12;
+export const OUTLINE_LABEL_PADDING = 4;
+export const OUTLINE_LABEL_BACKGROUND = "white";
+
 export const DEFAULT_FILL = "black";
 export const DEFAULT_STROKE_WIDTH = 1;
 

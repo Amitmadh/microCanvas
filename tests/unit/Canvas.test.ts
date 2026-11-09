@@ -160,6 +160,29 @@ describe("Canvas", () => {
     });
 
     // ======================================================
+    it("labels an outline above its topmost corner, unless the node is hidden", () => {
+        const canvas = addCanvas();
+        const rect = new Rectangle({ x: 100, y: 100, width: 100, height: 40, fill: "gold" });
+        canvas.add(rect);
+        canvas.drawOverlay = () => canvas.drawOutline(rect, "orange", "Label");
+
+        // The label's background spans y = 76 to 96, and its text is orange.
+        canvas.render();
+        expect(getPixel(canvas, 101, 78)).toEqual([255, 255, 255, 255]);
+        const row = Array.from({ length: 30 }, (_, i) => getPixel(canvas, 103 + i, 86));
+        expect(row.some(([r, , b]) => r > 200 && b < 128)).toBe(true);
+
+        // Turned anticlockwise, the top-right corner is topmost, at about (195.5, 70.5).
+        rect.rotation = -0.3;
+        canvas.render();
+        expect(getPixel(canvas, 197, 48)).toEqual([255, 255, 255, 255]);
+
+        rect.visible = false;
+        canvas.render();
+        expect(getPixel(canvas, 197, 48)).toEqual([0, 0, 0, 0]);
+    });
+
+    // ======================================================
     it("skips nodes out of view", () => {
         const canvas = addCanvas();
         const inView = new Rectangle({ x: 10, y: 10, width: 50, height: 50 });

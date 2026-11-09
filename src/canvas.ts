@@ -1,9 +1,13 @@
 import { Circle, type CircleJSON } from "./circle.js";
 import {
+    DEFAULT_FONT_FAMILY,
     MAX_WHEEL_ZOOM_STEP,
     MAX_ZOOM,
     MIN_MOVEMENT_PX,
     MIN_ZOOM,
+    OUTLINE_LABEL_BACKGROUND,
+    OUTLINE_LABEL_FONT_SIZE,
+    OUTLINE_LABEL_PADDING,
     RESIZE_HANDLE_FILL,
     RESIZE_HANDLE_LINE_WIDTH,
     RESIZE_HANDLE_SIZE,
@@ -276,8 +280,10 @@ export class Canvas {
      * outline.
      * @param node The node to outline.
      * @param color The outline's colour.
+     * @param label Text drawn in the colour above the outline's topmost
+     * corner, at a fixed screen size.
      */
-    drawOutline(node: McNode, color: Paint): void {
+    drawOutline(node: McNode, color: Paint, label?: string): void {
         if (!node.visible || node.opacity <= 0) {
             return;
         }
@@ -301,6 +307,21 @@ export class Canvas {
                 this.context.fillRect(x - half, y - half, RESIZE_HANDLE_SIZE, RESIZE_HANDLE_SIZE);
                 this.context.strokeRect(x - half, y - half, RESIZE_HANDLE_SIZE, RESIZE_HANDLE_SIZE);
             }
+        }
+
+        if (label) {
+            const corner = corners.reduce((top, corner) => (corner.y < top.y ? corner : top));
+            this.context.font = `${OUTLINE_LABEL_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
+            const width = this.context.measureText(label).width + 2 * OUTLINE_LABEL_PADDING;
+            const height = OUTLINE_LABEL_FONT_SIZE + 2 * OUTLINE_LABEL_PADDING;
+            const x = corner.x - SELECTION_LINE_WIDTH / 2;
+            const y = corner.y - RESIZE_HANDLE_SIZE / 2 - height;
+            this.context.fillStyle = OUTLINE_LABEL_BACKGROUND;
+            this.context.fillRect(x, y, width, height);
+            this.context.fillStyle = color;
+            this.context.textAlign = "left";
+            this.context.textBaseline = "middle";
+            this.context.fillText(label, x + OUTLINE_LABEL_PADDING, y + height / 2);
         }
         this.context.restore();
     }
